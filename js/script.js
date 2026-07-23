@@ -15,6 +15,7 @@ document.addEventListener("DOMContentLoaded", () => {
   bindConfettiTriggers();
   renderUpcomingMilestone();
   checkMilestone();
+  pingVisitCounter();
 
   // 计数器每秒刷新一次，制造"实时在增长"的感觉
   setInterval(renderCounter, 1000);
@@ -64,6 +65,18 @@ function bindTiltEffect(selector) {
     card.addEventListener("pointerup", reset);
     card.addEventListener("pointercancel", reset);
   });
+}
+
+// ---------- 揭晓瞬间的暖光迸发 ----------
+function spawnLightBurst(x, y) {
+  if (REDUCE_MOTION) return;
+  const burst = document.createElement("div");
+  burst.className = "light-burst";
+  burst.style.left = `${x}px`;
+  burst.style.top = `${y}px`;
+  document.body.appendChild(burst);
+  burst.addEventListener("animationend", () => burst.remove());
+  setTimeout(() => burst.remove(), 1600); // 保险清理
 }
 
 // ---------- 点击彩带迸发 ----------
@@ -358,6 +371,12 @@ function bindEnvelopeReveal() {
       if (config.unfoldLetter) {
         setTimeout(() => letter.classList.add("letter-unfold"), 300);
       }
+      // 揭晓瞬间：一圈暖光从信纸位置扩散开，背后星空也同步亮一下
+      const rect = letter.getBoundingClientRect();
+      spawnLightBurst(rect.left + rect.width / 2, rect.top + rect.height / 2);
+      if (typeof window.triggerStarfieldFlash === "function") {
+        window.triggerStarfieldFlash();
+      }
     }, 350);
 
     const totalDelay = config.unfoldLetter ? 1500 : 950;
@@ -417,6 +436,12 @@ function renderStarfield() {
   resize();
   window.addEventListener("resize", resize);
 
+  // 供开信封仪式调用："揭晓瞬间"让星空亮一下，制造被点亮的感觉
+  let flashIntensity = 0;
+  window.triggerStarfieldFlash = function () {
+    flashIntensity = 1;
+  };
+
   const STAR_COUNT = 140;
   const stars = [];
   for (let i = 0; i < STAR_COUNT; i++) {
@@ -468,15 +493,20 @@ function renderStarfield() {
     t += 0.016;
     ctx.clearRect(0, 0, w, h);
 
-    // 星星：带深度视差的缓慢漂移 + 呼吸闪烁
+    if (flashIntensity > 0) {
+      flashIntensity = Math.max(0, flashIntensity - 0.012); // 大约1.3秒衰减完
+    }
+
+    // 星星：带深度视差的缓慢漂移 + 呼吸闪烁（揭晓瞬间会额外叠加一次亮度提升）
     stars.forEach((s) => {
       s.x += s.driftSpeed * 0.01;
       if (s.x > 1.05) s.x = -0.05;
       if (s.x < -0.05) s.x = 1.05;
       const twinkle = 0.5 + 0.5 * Math.sin(t * s.twinkleSpeed + s.phase);
-      const alpha = 0.15 + s.depth * 0.55 * twinkle + 0.15;
+      const alpha = 0.15 + s.depth * 0.55 * twinkle + 0.15 + flashIntensity * 0.5;
+      const boostedRadius = s.radius * (1 + flashIntensity * 0.6);
       ctx.beginPath();
-      ctx.arc(s.x * w, s.y * h, s.radius, 0, Math.PI * 2);
+      ctx.arc(s.x * w, s.y * h, boostedRadius, 0, Math.PI * 2);
       ctx.fillStyle = `rgba(255,255,255,${Math.min(alpha, 1).toFixed(3)})`;
       ctx.fill();
     });
@@ -675,6 +705,16 @@ document.addEventListener("click", (e) => {
     renderLoveNote(true);
   }
 });
+
+// ---------- 访问计数（延迟触发，不占用首屏加载时间） ----------
+function pingVisitCounter() {
+  setTimeout(() => {
+    const img = new Image();
+    img.src =
+      "https://hits.seeyoufarm.com/api/count/incr/badge.svg?url=kaiwen-nfc-card-2026-private&count_bg=%23120826&title_bg=%23120826&title=&edge_flat=false";
+    // 不插入 DOM，只是触发这一次请求；加载失败也无所谓，不影响页面任何功能
+  }, 2500);
+}
 
 // ---------- 共享留言本 ----------
 function renderNotebookLink() {

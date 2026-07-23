@@ -129,10 +129,38 @@ section {
   padding: 64px 0 24px;
 }
 
+/* ---------- 滚动渐入（首屏 hero 不参与，一进来就显示） ---------- */
+.reveal-pending {
+  opacity: 0;
+  transform: translateY(24px);
+}
+
+.reveal-in {
+  opacity: 1;
+  transform: translateY(0);
+  transition: opacity 0.7s ease, transform 0.7s ease;
+}
+
+/* 减少动态效果偏好的用户，直接显示，不做位移动画 */
+@media (prefers-reduced-motion: reduce) {
+  .reveal-pending,
+  .reveal-in {
+    opacity: 1;
+    transform: none;
+    transition: none;
+  }
+  .star,
+  .heart-beat,
+  .timeline-item {
+    animation: none !important;
+  }
+}
+
 /* ---------- 开场区块 ---------- */
 .hero {
   text-align: center;
-  padding-top: 90px;
+  /* 兼容刘海屏/灵动岛/PWA 独立窗口模式，顶部留出安全区 */
+  padding-top: calc(90px + env(safe-area-inset-top, 0px));
 }
 
 .hero .subtitle {
@@ -307,6 +335,11 @@ section {
   display: flex;
   align-items: center;
   justify-content: center;
+  transition: opacity 0.22s ease;
+}
+
+#love-note-text.note-fade {
+  opacity: 0;
 }
 
 #shuffle-note-btn {

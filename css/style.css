@@ -108,7 +108,7 @@ html, body {
   background: linear-gradient(160deg, rgba(255, 255, 255, 0.09), rgba(255, 255, 255, 0.03));
   border: 1px solid var(--card-border);
   border-radius: 8px;
-  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.35);
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.35), inset 0 1px 0 rgba(255, 255, 255, 0.18);
   z-index: 1;
 }
 
@@ -120,14 +120,21 @@ html, body {
   height: 88px;
   background: linear-gradient(160deg, #fdf6ec, #f3e9d8);
   border-radius: 4px;
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.3);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.3), 0 0 0 1px rgba(255, 255, 255, 0.4) inset,
+    inset 0 -10px 16px -8px rgba(150, 110, 70, 0.25);
   z-index: 2;
   display: flex;
   align-items: center;
   justify-content: center;
   transform: translateY(0) rotateX(0deg) scale(1);
   transform-origin: top center;
-  transition: transform 0.7s cubic-bezier(0.22, 0.8, 0.32, 1);
+  transition: transform 0.7s cubic-bezier(0.22, 0.8, 0.32, 1), box-shadow 0.7s ease;
+}
+
+.letter.letter-rise,
+.letter.letter-unfold {
+  box-shadow: 0 12px 34px rgba(0, 0, 0, 0.4), 0 0 0 1px rgba(255, 255, 255, 0.45) inset,
+    0 0 30px rgba(255, 214, 138, 0.35);
 }
 
 .letter-content {
@@ -182,12 +189,13 @@ html, body {
   width: 46px;
   height: 46px;
   border-radius: 50%;
-  background: radial-gradient(circle at 35% 30%, #ff9fce, #d1477f);
+  background: radial-gradient(circle at 32% 26%, #ffc2e0 0%, #ff9fce 22%, #d1477f 62%, #a3305c 100%);
   display: flex;
   align-items: center;
   justify-content: center;
   z-index: 4;
-  box-shadow: 0 4px 14px rgba(209, 71, 127, 0.5);
+  box-shadow: 0 4px 14px rgba(209, 71, 127, 0.55), inset 0 -3px 6px rgba(0, 0, 0, 0.25),
+    inset 0 2px 3px rgba(255, 255, 255, 0.5);
   cursor: pointer;
   touch-action: none;
   -webkit-tap-highlight-color: transparent;
@@ -596,6 +604,40 @@ section {
   background: rgba(255, 255, 255, 0.08);
   color: var(--text-dim);
   pointer-events: none;
+}
+
+/* ---------- 揭晓瞬间的暖光迸发 ---------- */
+.light-burst {
+  position: fixed;
+  width: 40px;
+  height: 40px;
+  margin-left: -20px;
+  margin-top: -20px;
+  border-radius: 50%;
+  pointer-events: none;
+  z-index: 55;
+  background: radial-gradient(
+    circle,
+    rgba(255, 244, 224, 0.9) 0%,
+    rgba(255, 214, 138, 0.55) 30%,
+    rgba(255, 143, 199, 0.25) 55%,
+    rgba(255, 143, 199, 0) 75%
+  );
+  animation: light-burst-anim 1.3s cubic-bezier(0.15, 0.7, 0.3, 1) forwards;
+}
+
+@keyframes light-burst-anim {
+  0% {
+    transform: scale(0.3);
+    opacity: 0;
+  }
+  15% {
+    opacity: 1;
+  }
+  100% {
+    transform: scale(9);
+    opacity: 0;
+  }
 }
 
 /* ---------- 点击彩带迸发 ---------- */

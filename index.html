@@ -61,11 +61,14 @@
     <div id="counter-value"></div>
   </section>
 
-  <!-- 下一个重要日子倒计时（没有即将到来的会自动隐藏这个板块） -->
+  <!-- 里程碑：即将到来的倒计时（可以有好几个）+ 已经达成的记录 -->
+  <!-- 完全没有任何配置里程碑时，这个板块会自动隐藏 -->
   <section class="milestone-section" id="milestone-section">
-    <div class="milestone-chip">
-      <span class="milestone-dot"></span>
-      <span id="milestone-countdown"></span>
+    <div class="section-title serif">我们的里程碑</div>
+    <div class="milestone-upcoming" id="milestone-upcoming"></div>
+    <div class="milestone-achieved-wrap" id="milestone-achieved-wrap">
+      <div class="milestone-achieved-label">已经一起走过</div>
+      <div class="milestone-achieved-list" id="milestone-achieved"></div>
     </div>
   </section>
 

@@ -5,6 +5,15 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <title>给凯玟的卡片</title>
 <link rel="stylesheet" href="css/style.css">
+
+<!-- PWA：支持"添加到主屏幕" -->
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#120826">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="我们的卡片">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+<link rel="icon" href="icons/icon-192.png">
 </head>
 <body>
 
@@ -67,7 +76,19 @@
 
 </main>
 
+<!-- 访问计数（不记录任何个人信息，只是一个数字） -->
+<img src="https://hits.seeyoufarm.com/api/count/incr/badge.svg?url=kaiwen-nfc-card-2026-private&count_bg=%23120826&title_bg=%23120826&title=&edge_flat=false"
+     style="position:absolute;width:1px;height:1px;opacity:0;pointer-events:none;"
+     alt="" loading="eager">
+
 <script src="js/data.js"></script>
 <script src="js/script.js"></script>
+<script>
+  if ('serviceWorker' in navigator) {
+    window.addEventListener('load', () => {
+      navigator.serviceWorker.register('sw.js').catch(() => {});
+    });
+  }
+</script>
 </body>
 </html>

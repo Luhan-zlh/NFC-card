@@ -11,10 +11,121 @@ document.addEventListener("DOMContentLoaded", () => {
   renderNotebookLink();
   bindEnterOverlay();
   bindScrollReveal();
+  bindTiltEffect(".timeline-card, .note-card");
+  bindConfettiTriggers();
+  checkMilestone();
 
   // 计数器每秒刷新一次，制造"实时在增长"的感觉
   setInterval(renderCounter, 1000);
 });
+
+const REDUCE_MOTION =
+  window.matchMedia &&
+  window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+// ---------- 3D 触摸倾斜卡片 ----------
+function bindTiltEffect(selector) {
+  if (REDUCE_MOTION) return;
+  const cards = document.querySelectorAll(selector);
+  if (!cards.length) return;
+
+  cards.forEach((card) => {
+    card.style.transformStyle = "preserve-3d";
+    card.style.willChange = "transform";
+
+    const handleMove = (clientX, clientY) => {
+      const rect = card.getBoundingClientRect();
+      const cx = rect.left + rect.width / 2;
+      const cy = rect.top + rect.height / 2;
+      const dx = (clientX - cx) / (rect.width / 2);
+      const dy = (clientY - cy) / (rect.height / 2);
+      const maxTilt = 7; // 度数，克制一点更高级
+      const rotateY = Math.max(-1, Math.min(1, dx)) * maxTilt;
+      const rotateX = Math.max(-1, Math.min(1, -dy)) * maxTilt;
+      card.style.transform = `perspective(600px) rotateX(${rotateX.toFixed(
+        2
+      )}deg) rotateY(${rotateY.toFixed(2)}deg)`;
+    };
+
+    const reset = () => {
+      card.style.transition = "transform 0.5s ease";
+      card.style.transform = "perspective(600px) rotateX(0deg) rotateY(0deg)";
+      setTimeout(() => {
+        card.style.transition = "";
+      }, 500);
+    };
+
+    card.addEventListener("pointermove", (e) => {
+      card.style.transition = "";
+      handleMove(e.clientX, e.clientY);
+    });
+    card.addEventListener("pointerleave", reset);
+    card.addEventListener("pointerup", reset);
+    card.addEventListener("pointercancel", reset);
+  });
+}
+
+// ---------- 点击彩带迸发 ----------
+function spawnConfetti(x, y, count) {
+  if (REDUCE_MOTION) return;
+  count = count || 18;
+  const colors = ["#ff8fc7", "#ffd68a", "#c9a7ff", "#f3eefb"];
+
+  for (let i = 0; i < count; i++) {
+    const p = document.createElement("span");
+    p.className = "confetti-piece";
+    const angle = (Math.PI * 2 * i) / count + Math.random() * 0.5;
+    const distance = 60 + Math.random() * 70;
+    const dx = Math.cos(angle) * distance;
+    const dy = Math.sin(angle) * distance;
+    const size = 5 + Math.random() * 5;
+
+    p.style.left = `${x}px`;
+    p.style.top = `${y}px`;
+    p.style.width = `${size}px`;
+    p.style.height = `${size}px`;
+    p.style.background = colors[i % colors.length];
+    p.style.setProperty("--dx", `${dx}px`);
+    p.style.setProperty("--dy", `${dy}px`);
+    p.style.animationDelay = `${(Math.random() * 0.08).toFixed(2)}s`;
+
+    document.body.appendChild(p);
+    p.addEventListener("animationend", () => p.remove());
+    // 保险清理，避免个别浏览器不触发 animationend
+    setTimeout(() => p.remove(), 1400);
+  }
+}
+
+function bindConfettiTriggers() {
+  const btn = document.getElementById("shuffle-note-btn");
+  if (btn) {
+    btn.addEventListener("click", (e) => {
+      const rect = btn.getBoundingClientRect();
+      spawnConfetti(rect.left + rect.width / 2, rect.top + rect.height / 2, 14);
+    });
+  }
+}
+
+// ---------- 里程碑彩蛋 ----------
+function checkMilestone() {
+  if (!SITE_DATA.anniversaryDate) return;
+  const start = new Date(SITE_DATA.anniversaryDate + "T00:00:00");
+  const days = Math.floor((new Date() - start) / (24 * 60 * 60 * 1000));
+  const milestones = [100, 200, 300, 365, 500, 730, 1000, 1314, 1500, 2000];
+  if (milestones.includes(days)) {
+    setTimeout(() => {
+      const counterEl = document.getElementById("counter-value");
+      if (counterEl) {
+        const rect = counterEl.getBoundingClientRect();
+        spawnConfetti(
+          rect.left + rect.width / 2,
+          rect.top + rect.height / 2,
+          36
+        );
+      }
+    }, 1200); // 等开场遮罩淡出、内容可见后再触发
+  }
+}
 
 // ---------- 滚动渐入 ----------
 function bindScrollReveal() {
@@ -67,25 +178,118 @@ function bindEnterOverlay() {
   });
 }
 
-// ---------- 星空背景 ----------
+// ---------- 星空背景（canvas 视差 + 偶尔的流星） ----------
 function renderStarfield() {
-  const field = document.getElementById("starfield");
-  if (!field) return;
-  const STAR_COUNT = 90;
-  const frag = document.createDocumentFragment();
-  for (let i = 0; i < STAR_COUNT; i++) {
-    const star = document.createElement("span");
-    star.className = "star";
-    const size = (Math.random() * 2 + 1).toFixed(2);
-    star.style.width = `${size}px`;
-    star.style.height = `${size}px`;
-    star.style.top = `${Math.random() * 100}%`;
-    star.style.left = `${Math.random() * 100}%`;
-    star.style.animationDelay = `${(Math.random() * 6).toFixed(2)}s`;
-    star.style.animationDuration = `${(Math.random() * 3 + 2).toFixed(2)}s`;
-    frag.appendChild(star);
+  const canvas = document.getElementById("starfield");
+  if (!canvas || !canvas.getContext) return;
+  const ctx = canvas.getContext("2d");
+
+  const reduceMotion =
+    window.matchMedia &&
+    window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+  let w, h;
+  function resize() {
+    w = canvas.width = window.innerWidth * window.devicePixelRatio;
+    h = canvas.height = window.innerHeight * window.devicePixelRatio;
+    canvas.style.width = window.innerWidth + "px";
+    canvas.style.height = window.innerHeight + "px";
   }
-  field.appendChild(frag);
+  resize();
+  window.addEventListener("resize", resize);
+
+  const STAR_COUNT = 140;
+  const stars = [];
+  for (let i = 0; i < STAR_COUNT; i++) {
+    const depth = Math.random(); // 0=远(小/暗/慢) 1=近(大/亮/快)
+    stars.push({
+      x: Math.random(),
+      y: Math.random(),
+      depth,
+      radius: (0.4 + depth * 1.6) * window.devicePixelRatio,
+      phase: Math.random() * Math.PI * 2,
+      twinkleSpeed: 0.6 + Math.random() * 1.2,
+      driftSpeed: (0.002 + depth * 0.01) * (Math.random() < 0.5 ? 1 : -1),
+    });
+  }
+
+  // 静态渲染一次（不支持动效偏好或降级场景）
+  function drawStatic() {
+    ctx.clearRect(0, 0, w, h);
+    stars.forEach((s) => {
+      ctx.beginPath();
+      ctx.arc(s.x * w, s.y * h, s.radius, 0, Math.PI * 2);
+      ctx.fillStyle = `rgba(255,255,255,${0.35 + s.depth * 0.45})`;
+      ctx.fill();
+    });
+  }
+
+  if (reduceMotion) {
+    drawStatic();
+    return; // 不启动动画循环、不生成流星，省电且遵循用户偏好
+  }
+
+  // 流星：偶尔从随机位置斜着划过
+  let shootingStars = [];
+  function maybeSpawnShootingStar() {
+    if (Math.random() < 0.006 && shootingStars.length < 2) {
+      shootingStars.push({
+        x: Math.random() * w,
+        y: Math.random() * h * 0.4,
+        len: (80 + Math.random() * 60) * window.devicePixelRatio,
+        speed: (10 + Math.random() * 6) * window.devicePixelRatio,
+        angle: (Math.PI / 4) + (Math.random() * 0.2 - 0.1),
+        life: 1,
+      });
+    }
+  }
+
+  let t = 0;
+  function frame() {
+    t += 0.016;
+    ctx.clearRect(0, 0, w, h);
+
+    // 星星：带深度视差的缓慢漂移 + 呼吸闪烁
+    stars.forEach((s) => {
+      s.x += s.driftSpeed * 0.01;
+      if (s.x > 1.05) s.x = -0.05;
+      if (s.x < -0.05) s.x = 1.05;
+      const twinkle = 0.5 + 0.5 * Math.sin(t * s.twinkleSpeed + s.phase);
+      const alpha = 0.15 + s.depth * 0.55 * twinkle + 0.15;
+      ctx.beginPath();
+      ctx.arc(s.x * w, s.y * h, s.radius, 0, Math.PI * 2);
+      ctx.fillStyle = `rgba(255,255,255,${Math.min(alpha, 1).toFixed(3)})`;
+      ctx.fill();
+    });
+
+    // 流星
+    maybeSpawnShootingStar();
+    shootingStars.forEach((m) => {
+      const dx = Math.cos(m.angle) * m.speed;
+      const dy = Math.sin(m.angle) * m.speed;
+      m.x += dx;
+      m.y += dy;
+      m.life -= 0.02;
+
+      const tailX = m.x - Math.cos(m.angle) * m.len;
+      const tailY = m.y - Math.sin(m.angle) * m.len;
+      const grad = ctx.createLinearGradient(m.x, m.y, tailX, tailY);
+      grad.addColorStop(0, `rgba(255,255,255,${Math.max(m.life, 0)})`);
+      grad.addColorStop(1, "rgba(255,255,255,0)");
+      ctx.strokeStyle = grad;
+      ctx.lineWidth = 1.5 * window.devicePixelRatio;
+      ctx.beginPath();
+      ctx.moveTo(m.x, m.y);
+      ctx.lineTo(tailX, tailY);
+      ctx.stroke();
+    });
+    shootingStars = shootingStars.filter(
+      (m) => m.life > 0 && m.y < h + m.len && m.x < w + m.len
+    );
+
+    requestAnimationFrame(frame);
+  }
+  requestAnimationFrame(frame);
 }
 
 // ---------- 在一起天数计数器 ----------
@@ -189,6 +393,30 @@ function dayOfYearIndex(len) {
 }
 
 let currentNoteIndex = -1;
+let typewriterTimer = null;
+
+function typewriterReveal(el, text) {
+  clearInterval(typewriterTimer);
+  el.textContent = "";
+  el.classList.add("typing-cursor");
+
+  if (REDUCE_MOTION) {
+    el.textContent = text;
+    el.classList.remove("typing-cursor");
+    return;
+  }
+
+  let i = 0;
+  const speed = Math.max(18, Math.min(45, 900 / text.length)); // 长文字打快一点，短文字打慢一点
+  typewriterTimer = setInterval(() => {
+    i++;
+    el.textContent = text.slice(0, i);
+    if (i >= text.length) {
+      clearInterval(typewriterTimer);
+      el.classList.remove("typing-cursor");
+    }
+  }, speed);
+}
 
 function renderLoveNote(forceRandom) {
   const el = document.getElementById("love-note-text");
@@ -210,12 +438,17 @@ function renderLoveNote(forceRandom) {
   }
   currentNoteIndex = idx;
 
-  // 淡出 -> 换字 -> 淡入
-  el.classList.add("note-fade");
-  setTimeout(() => {
-    el.textContent = notes[idx];
-    el.classList.remove("note-fade");
-  }, 220);
+  if (forceRandom) {
+    // 手动换一条：先淡出再打字揭晓
+    el.classList.add("note-fade");
+    setTimeout(() => {
+      el.classList.remove("note-fade");
+      typewriterReveal(el, notes[idx]);
+    }, 220);
+  } else {
+    // 首次加载：直接打字揭晓
+    typewriterReveal(el, notes[idx]);
+  }
 }
 
 document.addEventListener("click", (e) => {

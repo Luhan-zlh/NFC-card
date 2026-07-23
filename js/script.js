@@ -13,7 +13,7 @@ document.addEventListener("DOMContentLoaded", () => {
   bindScrollReveal();
   bindTiltEffect(".timeline-card, .note-card");
   bindConfettiTriggers();
-  renderUpcomingMilestone();
+  renderMilestones();
   checkMilestone();
   pingVisitCounter();
 
@@ -148,34 +148,68 @@ function milestoneKey(m) {
   return `${m.type}_${m.value}_${m.label}`;
 }
 
-// 显示"距离最近一个重要日子还有几天"，只显示最近的一个；
-// 没有任何即将到来的日子，就把整个板块隐藏（不留空白违和感）
-function renderUpcomingMilestone() {
+// 显示"即将到来的里程碑"（最多同时显示3个，太多了会显乱）+ "已经达成的记录"；
+// 完全没有配置任何里程碑，就把整个板块隐藏（不留空白违和感）
+function renderMilestones() {
   const section = document.getElementById("milestone-section");
-  const el = document.getElementById("milestone-countdown");
-  if (!section || !el || !Array.isArray(SITE_DATA.milestones)) {
+  const upcomingEl = document.getElementById("milestone-upcoming");
+  const achievedWrap = document.getElementById("milestone-achieved-wrap");
+  const achievedEl = document.getElementById("milestone-achieved");
+  if (
+    !section ||
+    !upcomingEl ||
+    !achievedWrap ||
+    !achievedEl ||
+    !Array.isArray(SITE_DATA.milestones)
+  ) {
     if (section) section.style.display = "none";
     return;
   }
 
-  const upcoming = SITE_DATA.milestones
+  const withDays = SITE_DATA.milestones
     .map((m) => ({ ...m, daysLeft: daysUntilMilestone(m) }))
-    .filter((m) => m.daysLeft !== null && m.daysLeft >= 0)
-    .sort((a, b) => a.daysLeft - b.daysLeft);
+    .filter((m) => m.daysLeft !== null);
 
-  if (upcoming.length === 0) {
+  const upcoming = withDays
+    .filter((m) => m.daysLeft >= 0)
+    .sort((a, b) => a.daysLeft - b.daysLeft);
+  const achieved = withDays
+    .filter((m) => m.daysLeft < 0)
+    .sort((a, b) => b.daysLeft - a.daysLeft); // 越晚达成的排越前面
+
+  if (upcoming.length === 0 && achieved.length === 0) {
     section.style.display = "none";
     return;
   }
-
   section.style.display = "";
-  const next = upcoming[0];
-  if (next.daysLeft === 0) {
-    el.innerHTML = `<span class="milestone-today">今天就是「${next.label}」🎉</span>`;
+
+  // ---- 即将到来（最多显示3个） ----
+  upcomingEl.innerHTML = "";
+  upcoming.slice(0, 3).forEach((m) => {
+    const chip = document.createElement("div");
+    chip.className = "milestone-chip";
+    if (m.daysLeft === 0) {
+      chip.innerHTML = `<span class="milestone-today">今天就是「${m.label}」🎉</span>`;
+    } else {
+      chip.innerHTML =
+        `<span class="milestone-dot"></span>距离「${m.label}」还有 ` +
+        `<span class="milestone-num">${m.daysLeft}</span> 天`;
+    }
+    upcomingEl.appendChild(chip);
+  });
+
+  // ---- 已经达成的记录 ----
+  achievedEl.innerHTML = "";
+  if (achieved.length === 0) {
+    achievedWrap.style.display = "none";
   } else {
-    el.innerHTML =
-      `距离「${next.label}」还有 ` +
-      `<span class="milestone-num">${next.daysLeft}</span> 天`;
+    achievedWrap.style.display = "";
+    achieved.forEach((m) => {
+      const badge = document.createElement("span");
+      badge.className = "milestone-badge";
+      badge.textContent = `✓ ${m.label}`;
+      achievedEl.appendChild(badge);
+    });
   }
 }
 

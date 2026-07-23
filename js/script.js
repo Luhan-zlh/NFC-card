@@ -13,6 +13,7 @@ document.addEventListener("DOMContentLoaded", () => {
   bindScrollReveal();
   bindTiltEffect(".timeline-card, .note-card");
   bindConfettiTriggers();
+  renderUpcomingMilestone();
   checkMilestone();
 
   // 计数器每秒刷新一次，制造"实时在增长"的感觉
@@ -106,25 +107,103 @@ function bindConfettiTriggers() {
   }
 }
 
-// ---------- 里程碑彩蛋 ----------
-function checkMilestone() {
-  if (!SITE_DATA.anniversaryDate) return;
-  const start = new Date(SITE_DATA.anniversaryDate + "T00:00:00");
-  const days = Math.floor((new Date() - start) / (24 * 60 * 60 * 1000));
-  const milestones = [100, 200, 300, 365, 500, 730, 1000, 1314, 1500, 2000];
-  if (milestones.includes(days)) {
-    setTimeout(() => {
-      const counterEl = document.getElementById("counter-value");
-      if (counterEl) {
-        const rect = counterEl.getBoundingClientRect();
-        spawnConfetti(
-          rect.left + rect.width / 2,
-          rect.top + rect.height / 2,
-          36
-        );
-      }
-    }, 1200); // 等开场遮罩淡出、内容可见后再触发
+// ---------- 里程碑 / 重要日子 ----------
+
+// 算出某个里程碑距离今天还有几天（0=就是今天，负数=已经过了，null=算不出来/没配置）
+function daysUntilMilestone(m) {
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+
+  if (m.type === "days") {
+    if (!SITE_DATA.anniversaryDate || !m.value) return null;
+    const start = new Date(SITE_DATA.anniversaryDate + "T00:00:00");
+    const target = new Date(start.getTime() + m.value * 24 * 60 * 60 * 1000);
+    return Math.round((target - today) / (24 * 60 * 60 * 1000));
   }
+
+  if (m.type === "date") {
+    if (!m.value || !m.value.trim()) return null; // 还没定日期，跳过
+    const target = new Date(m.value + "T00:00:00");
+    if (isNaN(target.getTime())) return null; // 日期格式写错了，安全跳过不报错
+    return Math.round((target - today) / (24 * 60 * 60 * 1000));
+  }
+
+  return null;
+}
+
+function milestoneKey(m) {
+  return `${m.type}_${m.value}_${m.label}`;
+}
+
+// 显示"距离最近一个重要日子还有几天"，只显示最近的一个；
+// 没有任何即将到来的日子，就把整个板块隐藏（不留空白违和感）
+function renderUpcomingMilestone() {
+  const section = document.getElementById("milestone-section");
+  const el = document.getElementById("milestone-countdown");
+  if (!section || !el || !Array.isArray(SITE_DATA.milestones)) {
+    if (section) section.style.display = "none";
+    return;
+  }
+
+  const upcoming = SITE_DATA.milestones
+    .map((m) => ({ ...m, daysLeft: daysUntilMilestone(m) }))
+    .filter((m) => m.daysLeft !== null && m.daysLeft >= 0)
+    .sort((a, b) => a.daysLeft - b.daysLeft);
+
+  if (upcoming.length === 0) {
+    section.style.display = "none";
+    return;
+  }
+
+  section.style.display = "";
+  const next = upcoming[0];
+  if (next.daysLeft === 0) {
+    el.innerHTML = `<span class="milestone-today">今天就是「${next.label}」🎉</span>`;
+  } else {
+    el.innerHTML =
+      `距离「${next.label}」还有 ` +
+      `<span class="milestone-num">${next.daysLeft}</span> 天`;
+  }
+}
+
+// 里程碑彩蛋：不要求"正好那天打开"——只要到达/跨过了这个节点、且还没庆祝过，
+// 下次打开（不管隔了多久）都会补上这次庆祝，然后记住"已庆祝"不再重复。
+function checkMilestone() {
+  if (!Array.isArray(SITE_DATA.milestones)) return;
+
+  const STORAGE_KEY = "nfc_card_celebrated_milestones";
+  let celebrated = [];
+  try {
+    celebrated = JSON.parse(localStorage.getItem(STORAGE_KEY) || "[]");
+  } catch (e) {
+    celebrated = [];
+  }
+
+  const pending = SITE_DATA.milestones.filter((m) => {
+    const key = milestoneKey(m);
+    if (celebrated.includes(key)) return false;
+    const daysLeft = daysUntilMilestone(m);
+    return daysLeft !== null && daysLeft <= 0; // 已到达或已经过了
+  });
+
+  if (pending.length === 0) return;
+
+  setTimeout(() => {
+    const counterEl = document.getElementById("counter-value");
+    if (counterEl) {
+      const rect = counterEl.getBoundingClientRect();
+      spawnConfetti(
+        rect.left + rect.width / 2,
+        rect.top + rect.height / 2,
+        36
+      );
+    }
+  }, 1200); // 等开场遮罩淡出、内容可见后再触发
+
+  pending.forEach((m) => celebrated.push(milestoneKey(m)));
+  try {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(celebrated));
+  } catch (e) {}
 }
 
 // ---------- 滚动渐入 ----------

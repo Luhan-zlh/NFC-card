@@ -220,6 +220,33 @@ section {
   margin-right: 6px;
 }
 
+/* ---------- 下一个重要日子倒计时 ---------- */
+.milestone-section {
+  text-align: center;
+  padding-top: 8px;
+  padding-bottom: 8px;
+}
+
+#milestone-countdown {
+  font-size: 14px;
+  color: var(--text-dim);
+  letter-spacing: 0.5px;
+}
+
+.milestone-num {
+  font-size: 20px;
+  font-weight: 700;
+  color: var(--accent-lavender);
+  text-shadow: 0 0 14px rgba(201, 167, 255, 0.4);
+  margin: 0 2px;
+}
+
+.milestone-today {
+  color: var(--accent-gold);
+  font-size: 15px;
+  font-weight: 600;
+}
+
 /* ---------- 时间线区块 ---------- */
 .section-title {
   font-size: 18px;

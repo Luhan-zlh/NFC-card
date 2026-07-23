@@ -188,17 +188,36 @@ html, body {
   transform: translate(-50%, -30%);
   width: 46px;
   height: 46px;
-  border-radius: 50%;
-  background: radial-gradient(circle at 32% 26%, #ffc2e0 0%, #ff9fce 22%, #d1477f 62%, #a3305c 100%);
+  /* 不规则蜡滴形状，而不是正圆，更像手工滴蜡 */
+  border-radius: 44% 56% 58% 42% / 46% 42% 58% 54%;
+  background:
+    radial-gradient(circle at 28% 20%, rgba(255, 255, 255, 0.6) 0%, rgba(255, 255, 255, 0) 32%),
+    radial-gradient(circle at 68% 72%, rgba(0, 0, 0, 0.3) 0%, rgba(0, 0, 0, 0) 48%),
+    radial-gradient(ellipse at 35% 30%, #ffb3d9 0%, #ff85bd 30%, #d1477f 62%, #93284f 100%);
   display: flex;
   align-items: center;
   justify-content: center;
   z-index: 4;
-  box-shadow: 0 4px 14px rgba(209, 71, 127, 0.55), inset 0 -3px 6px rgba(0, 0, 0, 0.25),
-    inset 0 2px 3px rgba(255, 255, 255, 0.5);
+  box-shadow:
+    0 5px 16px rgba(147, 40, 79, 0.55),
+    inset 0 -4px 7px rgba(0, 0, 0, 0.32),
+    inset 0 3px 4px rgba(255, 255, 255, 0.45);
   cursor: pointer;
   touch-action: none;
   -webkit-tap-highlight-color: transparent;
+}
+
+/* 蜡滴：底部挂一小滴，增加"手工滴蜡"的真实感 */
+.envelope-seal::before {
+  content: "";
+  position: absolute;
+  bottom: -3px;
+  left: 40%;
+  width: 7px;
+  height: 8px;
+  border-radius: 50% 50% 55% 45% / 60% 60% 40% 40%;
+  background: radial-gradient(circle at 30% 25%, #ff9fce, #a3305c);
+  box-shadow: inset 0 -1px 2px rgba(0, 0, 0, 0.3);
 }
 
 .envelope-seal.seal-holding {
@@ -211,10 +230,14 @@ html, body {
 }
 
 .seal-heart {
-  color: #fff;
-  font-size: 17px;
+  color: rgba(255, 255, 255, 0.92);
+  font-size: 16px;
   position: relative;
   z-index: 1;
+  /* 压印质感：下沉阴影 + 微弱高光，模拟蜡上压出来的花纹 */
+  text-shadow:
+    0 1.5px 0 rgba(0, 0, 0, 0.45),
+    0 -1px 0 rgba(255, 255, 255, 0.35);
 }
 
 .seal-progress-ring {
@@ -376,11 +399,17 @@ section {
   margin-right: 6px;
 }
 
-/* ---------- 下一个重要日子倒计时 ---------- */
+/* ---------- 里程碑：即将到来 + 已经达成 ---------- */
 .milestone-section {
   text-align: center;
-  padding-top: 4px;
-  padding-bottom: 4px;
+}
+
+.milestone-upcoming {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 22px;
 }
 
 .milestone-chip {
@@ -393,6 +422,31 @@ section {
   border: 1px solid var(--card-border);
   backdrop-filter: blur(6px);
   box-shadow: 0 0 24px rgba(201, 167, 255, 0.08);
+}
+
+.milestone-achieved-label {
+  font-size: 12px;
+  color: var(--text-dim);
+  letter-spacing: 1px;
+  margin-bottom: 12px;
+}
+
+.milestone-achieved-list {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 8px;
+}
+
+.milestone-badge {
+  display: inline-block;
+  padding: 6px 14px;
+  border-radius: 999px;
+  font-size: 12px;
+  color: var(--accent-gold);
+  background: rgba(255, 214, 138, 0.08);
+  border: 1px solid rgba(255, 214, 138, 0.25);
+  letter-spacing: 0.5px;
 }
 
 .milestone-dot {

@@ -223,18 +223,46 @@ section {
 /* ---------- 下一个重要日子倒计时 ---------- */
 .milestone-section {
   text-align: center;
-  padding-top: 8px;
-  padding-bottom: 8px;
+  padding-top: 4px;
+  padding-bottom: 4px;
+}
+
+.milestone-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  padding: 11px 22px;
+  border-radius: 999px;
+  background: var(--card-bg);
+  border: 1px solid var(--card-border);
+  backdrop-filter: blur(6px);
+  box-shadow: 0 0 24px rgba(201, 167, 255, 0.08);
+}
+
+.milestone-dot {
+  flex-shrink: 0;
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--accent-gold);
+  box-shadow: 0 0 8px 2px rgba(255, 214, 138, 0.6);
+  animation: dot-pulse 1.8s ease-in-out infinite;
+}
+
+@keyframes dot-pulse {
+  0%, 100% { opacity: 0.5; transform: scale(0.85); }
+  50% { opacity: 1; transform: scale(1.2); }
 }
 
 #milestone-countdown {
-  font-size: 14px;
+  font-size: 13px;
   color: var(--text-dim);
   letter-spacing: 0.5px;
+  white-space: nowrap;
 }
 
 .milestone-num {
-  font-size: 20px;
+  font-size: 18px;
   font-weight: 700;
   color: var(--accent-lavender);
   text-shadow: 0 0 14px rgba(201, 167, 255, 0.4);
@@ -243,8 +271,14 @@ section {
 
 .milestone-today {
   color: var(--accent-gold);
-  font-size: 15px;
+  font-size: 14px;
   font-weight: 600;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .milestone-dot {
+    animation: none;
+  }
 }
 
 /* ---------- 时间线区块 ---------- */

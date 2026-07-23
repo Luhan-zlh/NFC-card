@@ -1,0 +1,359 @@
+/* ============================================================
+   视觉样式 —— 深色 / 星空风
+   ============================================================ */
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+:root {
+  --bg-deep: #05040f;
+  --bg-mid: #120826;
+  --bg-soft: #1b0f3a;
+  --accent-pink: #ff8fc7;
+  --accent-gold: #ffd68a;
+  --accent-lavender: #c9a7ff;
+  --text-main: #f3eefb;
+  --text-dim: #b8adcf;
+  --card-bg: rgba(255, 255, 255, 0.05);
+  --card-border: rgba(255, 255, 255, 0.14);
+}
+
+html, body {
+  width: 100%;
+  min-height: 100%;
+  background: linear-gradient(180deg, var(--bg-deep) 0%, var(--bg-mid) 45%, var(--bg-soft) 100%);
+  color: var(--text-main);
+  font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", "Microsoft YaHei", "Helvetica Neue", Arial, sans-serif;
+  overflow-x: hidden;
+  scroll-behavior: smooth;
+}
+
+.serif {
+  font-family: "STKaiti", "KaiTi", "Songti SC", serif;
+}
+
+/* ---------- 星空背景 ---------- */
+#starfield {
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+}
+
+.star {
+  position: absolute;
+  border-radius: 50%;
+  background: #ffffff;
+  opacity: 0.15;
+  animation-name: twinkle;
+  animation-iteration-count: infinite;
+  animation-timing-function: ease-in-out;
+  box-shadow: 0 0 4px 1px rgba(255, 255, 255, 0.5);
+}
+
+@keyframes twinkle {
+  0%, 100% { opacity: 0.15; }
+  50% { opacity: 0.9; }
+}
+
+/* ---------- 进入遮罩 ---------- */
+#enter-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 50;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 28px;
+  background: radial-gradient(circle at 50% 40%, var(--bg-mid), var(--bg-deep) 70%);
+  transition: opacity 0.9s ease, visibility 0.9s ease;
+}
+
+#enter-overlay.overlay-hidden {
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+}
+
+.heart-beat {
+  font-size: 64px;
+  color: var(--accent-pink);
+  animation: beat 1.3s ease-in-out infinite;
+  text-shadow: 0 0 24px rgba(255, 143, 199, 0.55);
+}
+
+@keyframes beat {
+  0%, 100% { transform: scale(1); }
+  25% { transform: scale(1.15); }
+  40% { transform: scale(0.95); }
+}
+
+#enter-btn {
+  font-size: 15px;
+  letter-spacing: 2px;
+  padding: 12px 32px;
+  border-radius: 999px;
+  border: 1px solid var(--card-border);
+  background: rgba(255, 255, 255, 0.06);
+  color: var(--text-main);
+  cursor: pointer;
+}
+
+#enter-btn:active {
+  background: rgba(255, 255, 255, 0.15);
+}
+
+.overlay-hint {
+  font-size: 13px;
+  color: var(--text-dim);
+}
+
+/* ---------- 主体内容 ---------- */
+body:not(.content-revealed) main {
+  visibility: hidden;
+}
+
+main {
+  position: relative;
+  z-index: 1;
+  max-width: 480px;
+  margin: 0 auto;
+  padding: 0 20px 80px;
+}
+
+section {
+  padding: 64px 0 24px;
+}
+
+/* ---------- 开场区块 ---------- */
+.hero {
+  text-align: center;
+  padding-top: 90px;
+}
+
+.hero .subtitle {
+  font-size: 13px;
+  letter-spacing: 3px;
+  color: var(--text-dim);
+  margin-bottom: 18px;
+}
+
+.hero .her-name {
+  font-size: 42px;
+  color: var(--accent-lavender);
+  text-shadow: 0 0 22px rgba(201, 167, 255, 0.45);
+  margin-bottom: 14px;
+}
+
+.hero .greeting {
+  font-size: 15px;
+  color: var(--text-dim);
+}
+
+.divider {
+  width: 60px;
+  height: 1px;
+  margin: 32px auto;
+  background: linear-gradient(90deg, transparent, var(--accent-gold), transparent);
+}
+
+/* ---------- 计数器区块 ---------- */
+.counter-section {
+  text-align: center;
+}
+
+.counter-label {
+  font-size: 14px;
+  color: var(--text-dim);
+  margin-bottom: 16px;
+  letter-spacing: 1px;
+}
+
+#counter-value {
+  display: flex;
+  justify-content: center;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: 4px 10px;
+}
+
+#counter-value .num {
+  font-size: 30px;
+  font-weight: 600;
+  color: var(--accent-gold);
+  text-shadow: 0 0 18px rgba(255, 214, 138, 0.4);
+  min-width: 1.6em;
+  display: inline-block;
+  text-align: center;
+}
+
+#counter-value .unit {
+  font-size: 13px;
+  color: var(--text-dim);
+  margin-right: 6px;
+}
+
+/* ---------- 时间线区块 ---------- */
+.section-title {
+  font-size: 18px;
+  color: var(--text-main);
+  text-align: center;
+  margin-bottom: 8px;
+  letter-spacing: 2px;
+}
+
+.section-subtitle {
+  font-size: 12px;
+  color: var(--text-dim);
+  text-align: center;
+  margin-bottom: 36px;
+}
+
+#timeline-list {
+  list-style: none;
+  position: relative;
+  padding-left: 22px;
+  border-left: 1px solid var(--card-border);
+}
+
+.timeline-item {
+  position: relative;
+  margin-bottom: 32px;
+  animation: fadeUp 0.6s ease both;
+}
+
+@keyframes fadeUp {
+  from { opacity: 0; transform: translateY(14px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.timeline-dot {
+  position: absolute;
+  left: -27px;
+  top: 6px;
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  background: var(--accent-pink);
+  box-shadow: 0 0 10px 2px rgba(255, 143, 199, 0.5);
+}
+
+.timeline-card {
+  background: var(--card-bg);
+  border: 1px solid var(--card-border);
+  border-radius: 14px;
+  padding: 16px 18px;
+  backdrop-filter: blur(6px);
+}
+
+.timeline-img {
+  width: 100%;
+  border-radius: 10px;
+  margin-bottom: 12px;
+  display: block;
+  object-fit: cover;
+  max-height: 220px;
+}
+
+.timeline-img-placeholder {
+  height: 90px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 28px;
+  color: var(--accent-pink);
+  background: rgba(255, 143, 199, 0.08);
+  opacity: 0.7;
+}
+
+.timeline-date {
+  font-size: 11px;
+  color: var(--accent-gold);
+  letter-spacing: 1px;
+  margin-bottom: 6px;
+}
+
+.timeline-title {
+  font-size: 15px;
+  color: var(--text-main);
+  margin-bottom: 6px;
+}
+
+.timeline-desc {
+  font-size: 13px;
+  line-height: 1.7;
+  color: var(--text-dim);
+}
+
+/* ---------- 爱意小纸条区块 ---------- */
+.note-card {
+  background: var(--card-bg);
+  border: 1px solid var(--card-border);
+  border-radius: 18px;
+  padding: 30px 24px;
+  text-align: center;
+  backdrop-filter: blur(6px);
+}
+
+#love-note-text {
+  font-size: 17px;
+  line-height: 1.9;
+  color: var(--text-main);
+  min-height: 4.5em;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+#shuffle-note-btn {
+  margin-top: 18px;
+  font-size: 12px;
+  letter-spacing: 1px;
+  color: var(--text-dim);
+  background: none;
+  border: 1px solid var(--card-border);
+  padding: 8px 18px;
+  border-radius: 999px;
+  cursor: pointer;
+}
+
+#shuffle-note-btn:active {
+  background: rgba(255, 255, 255, 0.08);
+}
+
+/* ---------- 留言本区块 ---------- */
+.notebook-section {
+  text-align: center;
+}
+
+#notebook-btn {
+  display: inline-block;
+  margin-top: 12px;
+  padding: 13px 28px;
+  border-radius: 999px;
+  background: linear-gradient(90deg, var(--accent-pink), var(--accent-lavender));
+  color: #1b0f3a;
+  font-size: 14px;
+  font-weight: 600;
+  text-decoration: none;
+  letter-spacing: 1px;
+}
+
+#notebook-btn.btn-disabled {
+  background: rgba(255, 255, 255, 0.08);
+  color: var(--text-dim);
+  pointer-events: none;
+}
+
+/* ---------- 页脚 ---------- */
+footer {
+  text-align: center;
+  padding: 40px 0 10px;
+  font-size: 11px;
+  color: rgba(184, 173, 207, 0.5);
+  letter-spacing: 1px;
+}

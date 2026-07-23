@@ -19,11 +19,29 @@
 
 <canvas id="starfield"></canvas>
 
-<!-- 进入遮罩：碰一下卡片打开网页后，先看到这个 -->
+<!-- 进入遮罩：碰一下卡片打开网页后，先看到这个（开信封仪式） -->
 <div id="enter-overlay">
-  <div class="heart-beat">♥</div>
-  <button id="enter-btn">轻触，打开这张卡片</button>
-  <div class="overlay-hint">— 只属于你 —</div>
+  <div class="pre-greeting" id="pre-greeting"></div>
+
+  <div class="envelope-wrap" id="envelope-wrap">
+    <div class="envelope">
+      <div class="envelope-back"></div>
+      <div class="letter" id="envelope-letter">
+        <div class="letter-content">♥</div>
+      </div>
+      <div class="envelope-flap" id="envelope-flap">
+        <div class="envelope-seal" id="envelope-seal">
+          <svg class="seal-progress-ring" viewBox="0 0 40 40">
+            <circle class="seal-ring-bg" cx="20" cy="20" r="17"></circle>
+            <circle class="seal-ring-fg" id="seal-ring-fg" cx="20" cy="20" r="17"></circle>
+          </svg>
+          <span class="seal-heart">♥</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="overlay-hint" id="overlay-hint">按住封蜡，揭晓这张卡片</div>
 </div>
 
 <main>

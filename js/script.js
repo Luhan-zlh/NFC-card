@@ -10,10 +10,43 @@ document.addEventListener("DOMContentLoaded", () => {
   renderLoveNote();
   renderNotebookLink();
   bindEnterOverlay();
+  bindScrollReveal();
 
   // 计数器每秒刷新一次，制造"实时在增长"的感觉
   setInterval(renderCounter, 1000);
 });
+
+// ---------- 滚动渐入 ----------
+function bindScrollReveal() {
+  // hero 开场区块一揭晓就应该立刻可见，不参与滚动渐入
+  const targets = document.querySelectorAll(
+    "main > section:not(.hero), main > .divider"
+  );
+  if (!targets.length) return;
+
+  if (!("IntersectionObserver" in window)) {
+    // 不支持的老浏览器，直接全部显示，不影响基础体验
+    targets.forEach((t) => t.classList.add("reveal-in"));
+    return;
+  }
+
+  const observer = new IntersectionObserver(
+    (entries) => {
+      entries.forEach((entry) => {
+        if (entry.isIntersecting) {
+          entry.target.classList.add("reveal-in");
+          observer.unobserve(entry.target);
+        }
+      });
+    },
+    { threshold: 0.15 }
+  );
+
+  targets.forEach((t) => {
+    t.classList.add("reveal-pending");
+    observer.observe(t);
+  });
+}
 
 // ---------- 开场 ----------
 function renderGreeting() {
@@ -107,6 +140,14 @@ function renderTimeline() {
       img.src = item.img;
       img.alt = item.title || "";
       img.className = "timeline-img";
+      img.loading = "lazy";
+      img.onerror = function () {
+        // 照片加载失败时，自动退回占位爱心，不显示"裂图"图标
+        const placeholder = document.createElement("div");
+        placeholder.className = "timeline-img timeline-img-placeholder";
+        placeholder.textContent = "♥";
+        this.replaceWith(placeholder);
+      };
       card.appendChild(img);
     } else {
       const placeholder = document.createElement("div");
@@ -147,6 +188,8 @@ function dayOfYearIndex(len) {
   return dayIdx % len;
 }
 
+let currentNoteIndex = -1;
+
 function renderLoveNote(forceRandom) {
   const el = document.getElementById("love-note-text");
   const notes = SITE_DATA.loveNotes;
@@ -154,11 +197,25 @@ function renderLoveNote(forceRandom) {
 
   let idx;
   if (forceRandom) {
-    idx = Math.floor(Math.random() * notes.length);
+    if (notes.length === 1) {
+      idx = 0;
+    } else {
+      // 排除当前这条，避免"随机到同一句"看起来像没反应
+      do {
+        idx = Math.floor(Math.random() * notes.length);
+      } while (idx === currentNoteIndex);
+    }
   } else {
     idx = dayOfYearIndex(notes.length);
   }
-  el.textContent = notes[idx];
+  currentNoteIndex = idx;
+
+  // 淡出 -> 换字 -> 淡入
+  el.classList.add("note-fade");
+  setTimeout(() => {
+    el.textContent = notes[idx];
+    el.classList.remove("note-fade");
+  }, 220);
 }
 
 document.addEventListener("click", (e) => {

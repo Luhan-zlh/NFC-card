@@ -66,37 +66,185 @@ html, body {
   pointer-events: none;
 }
 
-.heart-beat {
-  font-size: 64px;
-  color: var(--accent-pink);
-  animation: beat 1.3s ease-in-out infinite;
-  text-shadow: 0 0 24px rgba(255, 143, 199, 0.55);
-}
-
-@keyframes beat {
-  0%, 100% { transform: scale(1); }
-  25% { transform: scale(1.15); }
-  40% { transform: scale(0.95); }
-}
-
-#enter-btn {
+/* ---------- 开信封仪式 ---------- */
+.pre-greeting {
   font-size: 15px;
-  letter-spacing: 2px;
-  padding: 12px 32px;
-  border-radius: 999px;
-  border: 1px solid var(--card-border);
-  background: rgba(255, 255, 255, 0.06);
-  color: var(--text-main);
-  cursor: pointer;
+  color: var(--text-dim);
+  min-height: 1.6em;
+  text-align: center;
+  padding: 0 24px;
+  letter-spacing: 0.5px;
 }
 
-#enter-btn:active {
-  background: rgba(255, 255, 255, 0.15);
+.envelope-wrap {
+  perspective: 900px;
+  width: 170px;
+  height: 210px;
+  position: relative;
+  opacity: 0;
+  transform: scale(0.9);
+  transition: opacity 0.6s ease, transform 0.6s ease;
+  pointer-events: none;
+}
+
+.envelope-wrap.envelope-visible {
+  opacity: 1;
+  transform: scale(1);
+  pointer-events: auto;
+}
+
+.envelope {
+  position: absolute;
+  bottom: 20px;
+  left: 0;
+  width: 170px;
+  height: 110px;
+  transform-style: preserve-3d;
+}
+
+.envelope-back {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(160deg, rgba(255, 255, 255, 0.09), rgba(255, 255, 255, 0.03));
+  border: 1px solid var(--card-border);
+  border-radius: 8px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.35);
+  z-index: 1;
+}
+
+.letter {
+  position: absolute;
+  left: 8px;
+  right: 8px;
+  bottom: 6px;
+  height: 88px;
+  background: linear-gradient(160deg, #fdf6ec, #f3e9d8);
+  border-radius: 4px;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.3);
+  z-index: 2;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transform: translateY(0) rotateX(0deg) scale(1);
+  transform-origin: top center;
+  transition: transform 0.7s cubic-bezier(0.22, 0.8, 0.32, 1);
+}
+
+.letter-content {
+  font-size: 24px;
+  color: #d1477f;
+}
+
+.letter.letter-rise {
+  transform: translateY(-66px) rotateX(0deg) scale(1);
+}
+
+.letter.letter-unfold {
+  transition: none;
+  animation: letter-unfold-seq 0.6s cubic-bezier(0.22, 0.8, 0.32, 1) forwards;
+}
+
+@keyframes letter-unfold-seq {
+  0% { transform: translateY(-66px) rotateX(10deg) scale(0.94); }
+  100% { transform: translateY(-88px) rotateX(0deg) scale(1); }
+}
+
+.envelope-flap {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 170px;
+  height: 58px;
+  clip-path: polygon(0 0, 100% 0, 50% 100%);
+  background: linear-gradient(200deg, rgba(255, 255, 255, 0.13), rgba(255, 255, 255, 0.04));
+  border-top: 1px solid var(--card-border);
+  transform-origin: top center;
+  transform: rotateX(0deg);
+  transition: transform 0.65s ease;
+  z-index: 3;
+  backface-visibility: hidden;
+}
+
+.envelope-flap.flap-open {
+  transform: rotateX(-165deg);
+}
+
+/* 翻到一半之后层级降到信封主体之下，制造"盖子翻到背面"的视觉，避免穿模 */
+.envelope-flap.flap-behind {
+  z-index: 0;
+}
+
+.envelope-seal {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -30%);
+  width: 46px;
+  height: 46px;
+  border-radius: 50%;
+  background: radial-gradient(circle at 35% 30%, #ff9fce, #d1477f);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 4;
+  box-shadow: 0 4px 14px rgba(209, 71, 127, 0.5);
+  cursor: pointer;
+  touch-action: none;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.envelope-seal.seal-holding {
+  animation: seal-press 1.4s ease-in-out infinite;
+}
+
+@keyframes seal-press {
+  0%, 100% { transform: translate(-50%, -30%) scale(1); }
+  50% { transform: translate(-50%, -30%) scale(0.93); }
+}
+
+.seal-heart {
+  color: #fff;
+  font-size: 17px;
+  position: relative;
+  z-index: 1;
+}
+
+.seal-progress-ring {
+  position: absolute;
+  inset: -3px;
+  transform: rotate(-90deg);
+}
+
+.seal-ring-bg {
+  fill: none;
+  stroke: rgba(255, 255, 255, 0.25);
+  stroke-width: 2.5;
+}
+
+.seal-ring-fg {
+  fill: none;
+  stroke: #ffffff;
+  stroke-width: 2.5;
+  stroke-linecap: round;
+  stroke-dasharray: 106.8;
+  stroke-dashoffset: 106.8;
 }
 
 .overlay-hint {
   font-size: 13px;
   color: var(--text-dim);
+  opacity: 0;
+  transition: opacity 0.6s ease;
+}
+
+.overlay-hint.hint-visible {
+  opacity: 1;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .envelope-seal.seal-holding {
+    animation: none;
+  }
 }
 
 /* ---------- 主体内容 ---------- */

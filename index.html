@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>给凯玟的卡片</title>
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+<div id="starfield"></div>
+
+<!-- 进入遮罩：碰一下卡片打开网页后，先看到这个 -->
+<div id="enter-overlay">
+  <div class="heart-beat">♥</div>
+  <button id="enter-btn">轻触，打开这张卡片</button>
+  <div class="overlay-hint">— 只属于你 —</div>
+</div>
+
+<main>
+
+  <!-- 开场 -->
+  <section class="hero">
+    <div class="subtitle">TO</div>
+    <div class="her-name serif" id="her-name">凯玟</div>
+    <div class="greeting" id="greeting-text">这是只属于你的卡片</div>
+  </section>
+
+  <div class="divider"></div>
+
+  <!-- 在一起天数计数器 -->
+  <section class="counter-section">
+    <div class="counter-label">我们已经在一起</div>
+    <div id="counter-value"></div>
+  </section>
+
+  <div class="divider"></div>
+
+  <!-- 时间线 / 回忆录 -->
+  <section class="timeline-section">
+    <div class="section-title serif">我们的故事</div>
+    <div class="section-subtitle">— 一些值得记住的日子 —</div>
+    <ul id="timeline-list"></ul>
+  </section>
+
+  <div class="divider"></div>
+
+  <!-- 爱意小纸条 -->
+  <section class="note-section">
+    <div class="section-title serif">今天想对你说</div>
+    <div class="note-card">
+      <div id="love-note-text"></div>
+      <button id="shuffle-note-btn">换一条 ↻</button>
+    </div>
+  </section>
+
+  <div class="divider"></div>
+
+  <!-- 共享留言本 -->
+  <section class="notebook-section">
+    <div class="section-title serif">我们的留言本</div>
+    <div class="section-subtitle">想到什么都可以随时写进去，两个人都可以</div>
+    <a id="notebook-btn" href="javascript:void(0)" target="_blank" rel="noopener">留言本即将上线 …</a>
+  </section>
+
+  <footer>made with ♥ · 2026</footer>
+
+</main>
+
+<script src="js/data.js"></script>
+<script src="js/script.js"></script>
+</body>
+</html>

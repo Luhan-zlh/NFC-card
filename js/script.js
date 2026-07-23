@@ -136,8 +136,20 @@ function daysUntilMilestone(m) {
 
   if (m.type === "date") {
     if (!m.value || !m.value.trim()) return null; // 还没定日期，跳过
-    const target = new Date(m.value + "T00:00:00");
-    if (isNaN(target.getTime())) return null; // 日期格式写错了，安全跳过不报错
+    // 宽容解析：就算手写日期忘了补零（比如 "2026-7-30"），也能正确识别，
+    // 不需要严格写成 "2026-07-30"
+    const parts = m.value.trim().split("-");
+    let target;
+    if (parts.length === 3) {
+      const y = parseInt(parts[0], 10);
+      const mo = parseInt(parts[1], 10);
+      const d = parseInt(parts[2], 10);
+      target = new Date(y, mo - 1, d);
+    } else {
+      target = new Date(m.value + "T00:00:00");
+    }
+    if (isNaN(target.getTime())) return null; // 实在解析不了，安全跳过不报错
+    target.setHours(0, 0, 0, 0);
     return Math.round((target - today) / (24 * 60 * 60 * 1000));
   }
 

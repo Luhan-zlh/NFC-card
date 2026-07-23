@@ -9,7 +9,7 @@ document.addEventListener("DOMContentLoaded", () => {
   renderTimeline();
   renderLoveNote();
   renderNotebookLink();
-  bindEnterOverlay();
+  bindEnvelopeReveal();
   bindScrollReveal();
   bindTiltEffect(".timeline-card, .note-card");
   bindConfettiTriggers();
@@ -246,15 +246,155 @@ function renderGreeting() {
   if (greetEl) greetEl.textContent = SITE_DATA.greeting || "";
 }
 
-function bindEnterOverlay() {
+// 根据访问次数决定"仪式感"的浓淡：
+// 第1次最完整，2~5次简化一些，6次以后就很快，避免长期使用变成负担
+function getRevealTier() {
+  const KEY = "nfc_card_visit_count";
+  let count = 0;
+  try {
+    count = parseInt(localStorage.getItem(KEY) || "0", 10) || 0;
+  } catch (e) {}
+  count += 1;
+  try {
+    localStorage.setItem(KEY, String(count));
+  } catch (e) {}
+
+  if (count <= 1) {
+    return { holdDuration: 2500, showGreeting: true, unfoldLetter: true };
+  }
+  if (count <= 5) {
+    return { holdDuration: 1000, showGreeting: false, unfoldLetter: false };
+  }
+  return { holdDuration: 450, showGreeting: false, unfoldLetter: false };
+}
+
+// 简单的一次性打字机效果（跟小纸条那个是独立的，逻辑更单纯，不需要处理"换一条"）
+function typewriterOnce(el, text, onDone) {
+  if (!el) {
+    if (onDone) onDone();
+    return;
+  }
+  if (REDUCE_MOTION) {
+    el.textContent = text;
+    if (onDone) onDone();
+    return;
+  }
+  let i = 0;
+  el.textContent = "";
+  const timer = setInterval(() => {
+    i++;
+    el.textContent = text.slice(0, i);
+    if (i >= text.length) {
+      clearInterval(timer);
+      if (onDone) onDone();
+    }
+  }, 55);
+}
+
+function bindEnvelopeReveal() {
   const overlay = document.getElementById("enter-overlay");
-  const btn = document.getElementById("enter-btn");
-  if (!overlay || !btn) return;
-  btn.addEventListener("click", () => {
+  const envelopeWrap = document.getElementById("envelope-wrap");
+  const seal = document.getElementById("envelope-seal");
+  const ringFg = document.getElementById("seal-ring-fg");
+  const flap = document.getElementById("envelope-flap");
+  const letter = document.getElementById("envelope-letter");
+  const hint = document.getElementById("overlay-hint");
+  const preGreeting = document.getElementById("pre-greeting");
+
+  if (!overlay || !envelopeWrap || !seal || !flap || !letter) return;
+
+  // 无障碍：直接跳过整个仪式，淡出遮罩
+  if (REDUCE_MOTION) {
+    getRevealTier(); // 仍然计数，保持数据一致
     overlay.classList.add("overlay-hidden");
-    setTimeout(() => overlay.remove(), 900);
+    setTimeout(() => overlay.remove(), 300);
     document.body.classList.add("content-revealed");
-  });
+    return;
+  }
+
+  const config = getRevealTier();
+
+  function showEnvelope() {
+    envelopeWrap.classList.add("envelope-visible");
+    hint.classList.add("hint-visible");
+  }
+
+  if (config.showGreeting && preGreeting) {
+    typewriterOnce(preGreeting, "有一封信，是写给你的", showEnvelope);
+  } else {
+    showEnvelope();
+  }
+
+  const CIRCUMFERENCE = 2 * Math.PI * 17; // 对应 svg 里 r=17
+  let rafId = null;
+  let startTime = null;
+  let completed = false;
+
+  function updateProgress() {
+    if (completed) return;
+    const elapsed = performance.now() - startTime;
+    const pct = Math.min(elapsed / config.holdDuration, 1);
+    ringFg.style.strokeDashoffset = String(CIRCUMFERENCE * (1 - pct));
+    if (pct >= 1) {
+      completed = true;
+      completeOpen();
+      return;
+    }
+    rafId = requestAnimationFrame(updateProgress);
+  }
+
+  function completeOpen() {
+    cancelAnimationFrame(rafId);
+    seal.classList.remove("seal-holding");
+    flap.classList.add("flap-open");
+
+    // 信封盖转过大约一半角度后，层级降到信纸下面，制造"翻到背后"的视觉
+    setTimeout(() => {
+      flap.classList.add("flap-behind");
+    }, 300);
+
+    setTimeout(() => {
+      letter.classList.add("letter-rise");
+      if (config.unfoldLetter) {
+        setTimeout(() => letter.classList.add("letter-unfold"), 300);
+      }
+    }, 350);
+
+    const totalDelay = config.unfoldLetter ? 1500 : 950;
+    setTimeout(() => {
+      overlay.classList.add("overlay-hidden");
+      setTimeout(() => overlay.remove(), 900);
+      document.body.classList.add("content-revealed");
+    }, totalDelay);
+  }
+
+  function startHold(e) {
+    if (completed) return;
+    e.preventDefault();
+    try {
+      seal.setPointerCapture(e.pointerId);
+    } catch (err) {}
+    startTime = performance.now();
+    seal.classList.add("seal-holding");
+    rafId = requestAnimationFrame(updateProgress);
+  }
+
+  function cancelHold() {
+    if (completed) return;
+    cancelAnimationFrame(rafId);
+    startTime = null;
+    seal.classList.remove("seal-holding");
+    ringFg.style.transition = "stroke-dashoffset 0.4s ease";
+    ringFg.style.strokeDashoffset = String(CIRCUMFERENCE);
+    setTimeout(() => {
+      ringFg.style.transition = "";
+    }, 400);
+  }
+
+  seal.addEventListener("pointerdown", startHold);
+  seal.addEventListener("pointerup", cancelHold);
+  seal.addEventListener("pointercancel", cancelHold);
+  seal.addEventListener("pointerleave", cancelHold);
 }
 
 // ---------- 星空背景（canvas 视差 + 偶尔的流星） ----------

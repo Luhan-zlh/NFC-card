@@ -384,16 +384,22 @@ function bindEnvelopeReveal() {
     showEnvelope();
   }
 
-  const CIRCUMFERENCE = 2 * Math.PI * 17; // 对应 svg 里 r=17
+  const CIRCUMFERENCE = 2 * Math.PI * 44; // 对应 svg 里 r=44
   let rafId = null;
   let startTime = null;
   let completed = false;
+  const hintDefaultText = hint ? hint.textContent : "";
 
   function updateProgress() {
     if (completed) return;
     const elapsed = performance.now() - startTime;
     const pct = Math.min(elapsed / config.holdDuration, 1);
     ringFg.style.strokeDashoffset = String(CIRCUMFERENCE * (1 - pct));
+    // 手指会挡住蜡封上的进度环，所以整个信封也跟着一起"发光提亮"，
+    // 作为不会被手指遮挡的备用进度反馈
+    envelopeWrap.style.filter = `brightness(${(1 + pct * 0.5).toFixed(2)}) drop-shadow(0 0 ${(
+      pct * 22
+    ).toFixed(0)}px rgba(255, 214, 138, ${(pct * 0.7).toFixed(2)}))`;
     if (pct >= 1) {
       completed = true;
       completeOpen();
@@ -405,6 +411,7 @@ function bindEnvelopeReveal() {
   function completeOpen() {
     cancelAnimationFrame(rafId);
     seal.classList.remove("seal-holding");
+    envelopeWrap.style.filter = "";
     flap.classList.add("flap-open");
 
     // 信封盖转过大约一半角度后，层级降到信纸下面，制造"翻到背后"的视觉
@@ -441,6 +448,7 @@ function bindEnvelopeReveal() {
     } catch (err) {}
     startTime = performance.now();
     seal.classList.add("seal-holding");
+    if (hint) hint.textContent = "别松手，马上就好…";
     rafId = requestAnimationFrame(updateProgress);
   }
 
@@ -449,6 +457,8 @@ function bindEnvelopeReveal() {
     cancelAnimationFrame(rafId);
     startTime = null;
     seal.classList.remove("seal-holding");
+    envelopeWrap.style.filter = "";
+    if (hint) hint.textContent = hintDefaultText;
     ringFg.style.transition = "stroke-dashoffset 0.4s ease";
     ringFg.style.strokeDashoffset = String(CIRCUMFERENCE);
     setTimeout(() => {
@@ -457,9 +467,11 @@ function bindEnvelopeReveal() {
   }
 
   seal.addEventListener("pointerdown", startHold);
+  // 注意：故意不监听 pointerleave 来取消长按——
+  // 手指按压时天然会有微小抖动/位移，如果因为触点暂时超出这个小范围就判定"松手"，
+  // 体验会很差。只有真正抬起手指（pointerup）或系统打断（pointercancel，比如来电/下拉通知栏）才算取消。
   seal.addEventListener("pointerup", cancelHold);
   seal.addEventListener("pointercancel", cancelHold);
-  seal.addEventListener("pointerleave", cancelHold);
 }
 
 // ---------- 星空背景（canvas 视差 + 偶尔的流星） ----------

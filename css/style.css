@@ -183,11 +183,14 @@ html, body {
 
 .envelope-seal {
   position: absolute;
-  top: 50%;
+  /* 现在是 .envelope 的直接子元素（不再被信封盖的 clip-path 裁剪），
+     定位在信封盖跟信封主体的交界线上（flap 高度 58px 处），这也是蜡封本来该在的位置 */
+  top: 58px;
   left: 50%;
-  transform: translate(-50%, -30%);
-  width: 60px;
-  height: 60px;
+  transform: translate(-50%, -50%);
+  width: 50px;
+  height: 50px;
+  transition: opacity 0.4s ease;
   /* 不规则蜡滴形状，而不是正圆，更像手工滴蜡 */
   border-radius: 44% 56% 58% 42% / 46% 42% 58% 54%;
   background:
@@ -224,6 +227,12 @@ html, body {
   animation: seal-press 1.4s ease-in-out infinite;
 }
 
+.envelope-seal.seal-fade-out {
+  opacity: 0;
+  transform: translate(-50%, -50%) scale(0.6);
+  transition: opacity 0.4s ease, transform 0.4s ease;
+}
+
 @keyframes seal-press {
   0%, 100% { transform: translate(-50%, -30%) scale(1); }
   50% { transform: translate(-50%, -30%) scale(0.93); }
@@ -242,8 +251,9 @@ html, body {
 
 .seal-progress-ring {
   position: absolute;
-  /* 比蜡封本体（60px）大一整圈，手指压在中间时外圈依然露在外面看得到进度 */
-  inset: -25px;
+  /* 比蜡封本体（50px）适度大一圈（12px），手指压中间时外圈能露出来，
+     但不会大到跟周围元素挤在一起 */
+  inset: -12px;
   transform: rotate(-90deg);
   pointer-events: none; /* 让触摸事件穿透到下面的蜡封，环本身不参与命中判定 */
 }
@@ -251,16 +261,16 @@ html, body {
 .seal-ring-bg {
   fill: none;
   stroke: rgba(255, 255, 255, 0.22);
-  stroke-width: 5;
+  stroke-width: 4;
 }
 
 .seal-ring-fg {
   fill: none;
   stroke: #ffffff;
-  stroke-width: 5;
+  stroke-width: 4;
   stroke-linecap: round;
-  stroke-dasharray: 276.5;
-  stroke-dashoffset: 276.5;
+  stroke-dasharray: 213.6;
+  stroke-dashoffset: 213.6;
   filter: drop-shadow(0 0 4px rgba(255, 255, 255, 0.6));
 }
 

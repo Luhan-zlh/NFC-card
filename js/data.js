@@ -28,7 +28,7 @@ const SITE_DATA = {
       date: "2025-08-04",
       title: "我们在一起啦",
       desc: "",
-      img: "2025-08-04.jpg"
+      img: "images/2025-08-04.jpg"
     }
     // {
     //   date: "",

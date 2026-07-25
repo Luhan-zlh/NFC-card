@@ -138,9 +138,13 @@ function daysUntilMilestone(m) {
 
   if (m.type === "date") {
     if (!m.value || !m.value.trim()) return null; // 还没定日期，跳过
+    // 里程碑倒计时是按"天"算的（显示"还有几天"，不是"还有几小时"），
+    // 所以如果写了具体时间（比如 "2026-7-29 15:00"），时间部分会被有意忽略，
+    // 只取日期部分——这是设计如此，不是 bug
+    const datePart = m.value.trim().split(/[ T]/)[0];
     // 宽容解析：就算手写日期忘了补零（比如 "2026-7-30"），也能正确识别，
     // 不需要严格写成 "2026-07-30"
-    const parts = m.value.trim().split("-");
+    const parts = datePart.split("-");
     let target;
     if (parts.length === 3) {
       const y = parseInt(parts[0], 10);
@@ -148,7 +152,7 @@ function daysUntilMilestone(m) {
       const d = parseInt(parts[2], 10);
       target = new Date(y, mo - 1, d);
     } else {
-      target = new Date(m.value + "T00:00:00");
+      target = new Date(datePart + "T00:00:00");
     }
     if (isNaN(target.getTime())) return null; // 实在解析不了，安全跳过不报错
     target.setHours(0, 0, 0, 0);

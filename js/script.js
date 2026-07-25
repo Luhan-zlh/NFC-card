@@ -128,9 +128,11 @@ function daysUntilMilestone(m) {
   today.setHours(0, 0, 0, 0);
 
   if (m.type === "days") {
-    if (!SITE_DATA.anniversaryDate || !m.value) return null;
-    const start = new Date(SITE_DATA.anniversaryDate + "T00:00:00");
+    if (!m.value) return null;
+    const start = parseAnniversaryDateTime(SITE_DATA.anniversaryDate);
+    if (!start) return null;
     const target = new Date(start.getTime() + m.value * 24 * 60 * 60 * 1000);
+    target.setHours(0, 0, 0, 0); // 里程碑倒计时按"天"算，忽略具体时分秒
     return Math.round((target - today) / (24 * 60 * 60 * 1000));
   }
 
@@ -600,12 +602,30 @@ function renderStarfield() {
   requestAnimationFrame(frame);
 }
 
+// 解析交往纪念日，支持两种写法：
+//   "2025-08-04"          -> 按当天 00:00:00 算
+//   "2025-08-04 14:30"    -> 按精确时刻算（也支持 "2025-08-04T14:30"）
+function parseAnniversaryDateTime(str) {
+  if (!str) return null;
+  let normalized = str.trim().replace(" ", "T");
+  if (!normalized.includes("T")) {
+    normalized += "T00:00:00";
+  } else {
+    const timePart = normalized.split("T")[1];
+    if (timePart && timePart.split(":").length === 2) {
+      normalized += ":00"; // 补上秒数
+    }
+  }
+  const d = new Date(normalized);
+  return isNaN(d.getTime()) ? null : d;
+}
+
 // ---------- 在一起天数计数器 ----------
 function renderCounter() {
   const el = document.getElementById("counter-value");
-  if (!el || !SITE_DATA.anniversaryDate) return;
+  const start = parseAnniversaryDateTime(SITE_DATA.anniversaryDate);
+  if (!el || !start) return;
 
-  const start = new Date(SITE_DATA.anniversaryDate + "T00:00:00");
   const now = new Date();
   let diff = now - start;
   if (diff < 0) diff = 0;

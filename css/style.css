@@ -186,8 +186,8 @@ html, body {
   top: 50%;
   left: 50%;
   transform: translate(-50%, -30%);
-  width: 46px;
-  height: 46px;
+  width: 60px;
+  height: 60px;
   /* 不规则蜡滴形状，而不是正圆，更像手工滴蜡 */
   border-radius: 44% 56% 58% 42% / 46% 42% 58% 54%;
   background:
@@ -242,23 +242,26 @@ html, body {
 
 .seal-progress-ring {
   position: absolute;
-  inset: -3px;
+  /* 比蜡封本体（60px）大一整圈，手指压在中间时外圈依然露在外面看得到进度 */
+  inset: -25px;
   transform: rotate(-90deg);
+  pointer-events: none; /* 让触摸事件穿透到下面的蜡封，环本身不参与命中判定 */
 }
 
 .seal-ring-bg {
   fill: none;
-  stroke: rgba(255, 255, 255, 0.25);
-  stroke-width: 2.5;
+  stroke: rgba(255, 255, 255, 0.22);
+  stroke-width: 5;
 }
 
 .seal-ring-fg {
   fill: none;
   stroke: #ffffff;
-  stroke-width: 2.5;
+  stroke-width: 5;
   stroke-linecap: round;
-  stroke-dasharray: 106.8;
-  stroke-dashoffset: 106.8;
+  stroke-dasharray: 276.5;
+  stroke-dashoffset: 276.5;
+  filter: drop-shadow(0 0 4px rgba(255, 255, 255, 0.6));
 }
 
 .overlay-hint {

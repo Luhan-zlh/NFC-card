@@ -183,13 +183,16 @@ html, body {
 
 .envelope-seal {
   position: absolute;
-  /* 现在是 .envelope 的直接子元素（不再被信封盖的 clip-path 裁剪），
-     定位在信封盖跟信封主体的交界线上（flap 高度 58px 处），这也是蜡封本来该在的位置 */
-  top: 58px;
+  /* 现在是 .envelope-wrap 的直接子元素（完全脱离信封的 3D 容器和 clip-path），
+     纯 2D 定位在信封盖跟信封主体的交界线上：
+     .envelope 在 wrap 里 bottom:20px、高110px，交界线在 envelope 局部58px处，
+     换算成 wrap 坐标 = 210 - 20 - 110 + 58 = 138px */
+  top: 138px;
   left: 50%;
   transform: translate(-50%, -50%);
   width: 50px;
   height: 50px;
+  z-index: 10;
   transition: opacity 0.4s ease;
   /* 不规则蜡滴形状，而不是正圆，更像手工滴蜡 */
   border-radius: 44% 56% 58% 42% / 46% 42% 58% 54%;

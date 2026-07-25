@@ -30,17 +30,17 @@
         <div class="letter-content">♥</div>
       </div>
       <div class="envelope-flap" id="envelope-flap"></div>
-      <!-- 蜡封故意做成信封盖的"兄弟元素"而不是子元素——
-           信封盖用了 clip-path 裁剪成三角形，如果蜡封是它的子元素，
-           凡是超出三角形范围的部分（比如放大的进度环）都会被直接裁掉 -->
-      <div class="envelope-seal" id="envelope-seal">
-        <!-- 进度环适度比蜡封本体大一圈，这样手指压在中间时，外圈依然能露出来看到进度 -->
-        <svg class="seal-progress-ring" viewBox="0 0 74 74">
-          <circle class="seal-ring-bg" cx="37" cy="37" r="34"></circle>
-          <circle class="seal-ring-fg" id="seal-ring-fg" cx="37" cy="37" r="34"></circle>
-        </svg>
-        <span class="seal-heart">♥</span>
-      </div>
+    </div>
+    <!-- 蜡封故意完全挪出 .envelope 这个 3D 变换容器（preserve-3d + clip-path 组合
+         之前造成了堆叠/裁剪的不确定行为），改成纯 2D 定位的独立元素，
+         直接挂在 .envelope-wrap 下面，彻底避开这个问题 -->
+    <div class="envelope-seal" id="envelope-seal">
+      <!-- 进度环适度比蜡封本体大一圈，这样手指压在中间时，外圈依然能露出来看到进度 -->
+      <svg class="seal-progress-ring" viewBox="0 0 74 74">
+        <circle class="seal-ring-bg" cx="37" cy="37" r="34"></circle>
+        <circle class="seal-ring-fg" id="seal-ring-fg" cx="37" cy="37" r="34"></circle>
+      </svg>
+      <span class="seal-heart">♥</span>
     </div>
   </div>
 

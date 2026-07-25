@@ -384,7 +384,7 @@ function bindEnvelopeReveal() {
     showEnvelope();
   }
 
-  const CIRCUMFERENCE = 2 * Math.PI * 44; // 对应 svg 里 r=44
+  const CIRCUMFERENCE = 2 * Math.PI * 34; // 对应 svg 里 r=34
   let rafId = null;
   let startTime = null;
   let completed = false;
@@ -411,6 +411,7 @@ function bindEnvelopeReveal() {
   function completeOpen() {
     cancelAnimationFrame(rafId);
     seal.classList.remove("seal-holding");
+    seal.classList.add("seal-fade-out");
     envelopeWrap.style.filter = "";
     flap.classList.add("flap-open");
 

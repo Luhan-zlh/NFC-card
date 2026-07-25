@@ -562,11 +562,13 @@ section {
 
 .timeline-img {
   width: 100%;
+  height: auto;           /* 高度跟着图片本身的宽高比走，不再强行裁切 */
+  max-height: 420px;      /* 只是给异常狭长的照片兜个底，正常照片不会触发 */
+  object-fit: contain;    /* 完整显示整张照片，多余空间留白而不是裁掉内容 */
   border-radius: 10px;
   margin-bottom: 12px;
   display: block;
-  object-fit: cover;
-  max-height: 220px;
+  background: rgba(255, 255, 255, 0.03); /* 留白部分融入卡片背景，不显得突兀 */
 }
 
 .timeline-img-placeholder {

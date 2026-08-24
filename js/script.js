@@ -9,6 +9,8 @@ document.addEventListener("DOMContentLoaded", () => {
   renderTimeline();
   renderLoveNote();
   renderNotebookLink();
+  renderPlaces();
+  renderMissYouButton();
   bindEnvelopeReveal();
   bindScrollReveal();
   bindTiltEffect(".timeline-card, .note-card");
@@ -671,14 +673,29 @@ function renderTimeline() {
     const card = document.createElement("div");
     card.className = "timeline-card";
 
-    if (item.img) {
+    // 照片字段支持两种写法（向后兼容）：
+    //   单张：  img: "images/xxx.jpg"
+    //   多张：  img: ["images/a.jpg", "images/b.jpg", "images/c.jpg"]
+    // 多张时会渲染成可左右滑动 + 自动轮播的轮播图
+    let imgs = [];
+    if (Array.isArray(item.img)) {
+      imgs = item.img.filter((s) => s && s.trim());
+    } else if (item.img && item.img.trim()) {
+      imgs = [item.img.trim()];
+    }
+
+    if (imgs.length === 0) {
+      const placeholder = document.createElement("div");
+      placeholder.className = "timeline-img timeline-img-placeholder";
+      placeholder.textContent = "♥";
+      card.appendChild(placeholder);
+    } else if (imgs.length === 1) {
       const img = document.createElement("img");
-      img.src = item.img;
+      img.src = imgs[0];
       img.alt = item.title || "";
       img.className = "timeline-img";
       img.loading = "lazy";
       img.onerror = function () {
-        // 照片加载失败时，自动退回占位爱心，不显示"裂图"图标
         const placeholder = document.createElement("div");
         placeholder.className = "timeline-img timeline-img-placeholder";
         placeholder.textContent = "♥";
@@ -686,10 +703,122 @@ function renderTimeline() {
       };
       card.appendChild(img);
     } else {
-      const placeholder = document.createElement("div");
-      placeholder.className = "timeline-img timeline-img-placeholder";
-      placeholder.textContent = "♥";
-      card.appendChild(placeholder);
+      // 多张照片 → 轮播图
+      const carousel = document.createElement("div");
+      carousel.className = "timeline-carousel";
+
+      const track = document.createElement("div");
+      track.className = "carousel-track";
+
+      imgs.forEach((src) => {
+        const cell = document.createElement("div");
+        cell.className = "carousel-cell";
+        const img = document.createElement("img");
+        img.src = src;
+        img.alt = item.title || "";
+        img.loading = "lazy";
+        img.onerror = function () {
+          const ph = document.createElement("div");
+          ph.className = "timeline-img-placeholder";
+          ph.textContent = "♥";
+          ph.style.height = "200px";
+          this.replaceWith(ph);
+        };
+        cell.appendChild(img);
+        track.appendChild(cell);
+      });
+
+      carousel.appendChild(track);
+
+      // 导航箭头
+      const prev = document.createElement("button");
+      prev.className = "carousel-nav carousel-prev";
+      prev.innerHTML = "‹";
+      prev.setAttribute("aria-label", "上一张");
+
+      const next = document.createElement("button");
+      next.className = "carousel-nav carousel-next";
+      next.innerHTML = "›";
+      next.setAttribute("aria-label", "下一张");
+
+      carousel.appendChild(prev);
+      carousel.appendChild(next);
+
+      // 指示点
+      const dotsWrap = document.createElement("div");
+      dotsWrap.className = "carousel-dots";
+      for (let d = 0; d < imgs.length; d++) {
+        const dotBtn = document.createElement("button");
+        dotBtn.className = "carousel-dot";
+        if (d === 0) dotBtn.classList.add("carousel-dot-active");
+        dotBtn.setAttribute("aria-label", "第 " + (d + 1) + " 张");
+        dotsWrap.appendChild(dotBtn);
+      }
+      carousel.appendChild(dotsWrap);
+
+      // 轮播逻辑
+      let currentIdx = 0;
+      let autoTimer = null;
+      const AUTO_INTERVAL = 4000;
+
+      function goTo(i) {
+        currentIdx = (i + imgs.length) % imgs.length;
+        track.style.transform = "translateX(-" + currentIdx * 100 + "%)";
+        dotsWrap.querySelectorAll(".carousel-dot").forEach((d, di) => {
+          d.classList.toggle("carousel-dot-active", di === currentIdx);
+        });
+      }
+
+      function startAuto() {
+        stopAuto();
+        if (!REDUCE_MOTION) {
+          autoTimer = setInterval(() => goTo(currentIdx + 1), AUTO_INTERVAL);
+        }
+      }
+
+      function stopAuto() {
+        if (autoTimer) {
+          clearInterval(autoTimer);
+          autoTimer = null;
+        }
+      }
+
+      prev.addEventListener("click", (e) => {
+        e.stopPropagation();
+        goTo(currentIdx - 1);
+        startAuto(); // 用户操作后重置自动计时
+      });
+      next.addEventListener("click", (e) => {
+        e.stopPropagation();
+        goTo(currentIdx + 1);
+        startAuto();
+      });
+      dotsWrap.querySelectorAll(".carousel-dot").forEach((d, di) => {
+        d.addEventListener("click", (e) => {
+          e.stopPropagation();
+          goTo(di);
+          startAuto();
+        });
+      });
+
+      // 触摸滑动支持
+      let touchStartX = null;
+      track.addEventListener("pointerdown", (e) => {
+        touchStartX = e.clientX;
+        stopAuto();
+      });
+      track.addEventListener("pointerup", (e) => {
+        if (touchStartX === null) return;
+        const dx = e.clientX - touchStartX;
+        if (Math.abs(dx) > 40) {
+          goTo(currentIdx + (dx < 0 ? 1 : -1));
+        }
+        touchStartX = null;
+        startAuto();
+      });
+
+      startAuto();
+      card.appendChild(carousel);
     }
 
     const dateEl = document.createElement("div");
@@ -813,4 +942,284 @@ function renderNotebookLink() {
     btn.textContent = "留言本即将上线 …";
     btn.classList.add("btn-disabled");
   }
+}
+
+// ---------- 我们的足迹 / 距离 ----------
+// Haversine 公式：算地球表面两点之间的球面距离
+function haversineKm(lat1, lon1, lat2, lon2) {
+  const R = 6371; // 地球平均半径，公里
+  const toRad = (deg) => (deg * Math.PI) / 180;
+  const dLat = toRad(lat2 - lat1);
+  const dLon = toRad(lon2 - lon1);
+  const a =
+    Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+    Math.cos(toRad(lat1)) *
+      Math.cos(toRad(lat2)) *
+      Math.sin(dLon / 2) *
+      Math.sin(dLon / 2);
+  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+  return R * c;
+}
+
+function formatDistance(km) {
+  if (km < 1) {
+    return Math.round(km * 1000) + " 米";
+  }
+  return km.toFixed(1) + " 公里";
+}
+
+const VISITED_CITIES_KEY = "nfc_card_visited_cities";
+
+function loadVisitedCities() {
+  try {
+    return JSON.parse(localStorage.getItem(VISITED_CITIES_KEY) || "[]");
+  } catch (e) {
+    return [];
+  }
+}
+
+function addVisitedCity(cityName) {
+  if (!cityName) return;
+  const cities = loadVisitedCities();
+  // 同名城市不重复记录，只更新最近访问时间
+  const existing = cities.find((c) => c.name === cityName);
+  if (existing) {
+    existing.lastVisit = new Date().toISOString();
+  } else {
+    cities.push({ name: cityName, lastVisit: new Date().toISOString() });
+  }
+  try {
+    localStorage.setItem(VISITED_CITIES_KEY, JSON.stringify(cities));
+  } catch (e) {}
+}
+
+function renderVisitedCities() {
+  const wrap = document.getElementById("visited-cities-wrap");
+  const list = document.getElementById("visited-cities-list");
+  if (!wrap || !list) return;
+  const cities = loadVisitedCities();
+  if (cities.length === 0) {
+    wrap.style.display = "none";
+    return;
+  }
+  wrap.style.display = "";
+  list.innerHTML = "";
+  cities.forEach((c) => {
+    const chip = document.createElement("span");
+    chip.className = "city-chip";
+    chip.textContent = c.name;
+    list.appendChild(chip);
+  });
+}
+
+function renderPlaces() {
+  const section = document.getElementById("places-section");
+  const list = document.getElementById("places-list");
+  const locateBtn = document.getElementById("locate-btn");
+  if (!section || !list) return;
+
+  const places = Array.isArray(SITE_DATA.places) ? SITE_DATA.places : [];
+  if (places.length === 0) {
+    section.style.display = "none";
+    return;
+  }
+  section.style.display = "";
+
+  // 渲染地点列表（不显示距离，等用户授权后才显示）
+  list.innerHTML = "";
+  places.forEach((p, idx) => {
+    const item = document.createElement("div");
+    item.className = "place-item";
+    item.id = "place-item-" + idx;
+    item.innerHTML =
+      '<span class="place-dot"></span>' +
+      '<span class="place-name">' + (p.name || "") + '</span>' +
+      (p.date ? '<span class="place-date">' + p.date + '</span>' : "") +
+      '<span class="place-distance" id="place-distance-' + idx + '"></span>';
+    list.appendChild(item);
+  });
+
+  if (locateBtn) {
+    locateBtn.addEventListener("click", handleLocate);
+  }
+
+  renderVisitedCities();
+}
+
+function handleLocate() {
+  const btn = document.getElementById("locate-btn");
+  if (!btn) return;
+
+  if (!("geolocation" in navigator)) {
+    btn.textContent = "你的设备不支持定位";
+    return;
+  }
+
+  btn.textContent = "正在定位…";
+  btn.disabled = true;
+
+  navigator.geolocation.getCurrentPosition(
+    (pos) => {
+      const { latitude, longitude } = pos.coords;
+      const places = SITE_DATA.places || [];
+
+      // 显示距离每个地点的距离
+      places.forEach((p, idx) => {
+        const el = document.getElementById("place-distance-" + idx);
+        if (!el) return;
+        const dist = haversineKm(latitude, longitude, p.lat, p.lng);
+        el.textContent = "距此 " + formatDistance(dist);
+        el.classList.add("distance-visible");
+      });
+
+      btn.textContent = "✓ 已显示距离";
+      btn.disabled = false;
+
+      // 反向地理编码获取城市名（用 OpenStreetMap Nominatim 免费服务）
+      // 记录访问城市到 localStorage
+      reverseGeocodeCity(latitude, longitude).then((cityName) => {
+        if (cityName) {
+          addVisitedCity(cityName);
+          renderVisitedCities();
+        }
+      }).catch(() => {
+        // 反向地理编码失败不影响距离显示
+      });
+    },
+    (err) => {
+      if (err.code === err.PERMISSION_DENIED) {
+        btn.textContent = "没有授权定位，点这里再试";
+      } else if (err.code === err.POSITION_UNAVAILABLE) {
+        btn.textContent = "定位暂时不可用，点这里再试";
+      } else if (err.code === err.TIMEOUT) {
+        btn.textContent = "定位超时，点这里再试";
+      } else {
+        btn.textContent = "定位失败，点这里再试";
+      }
+      btn.disabled = false;
+    },
+    { enableHighAccuracy: false, timeout: 10000, maximumAge: 600000 }
+  );
+}
+
+// 反向地理编码：从经纬度查城市名
+// 用 OpenStreetMap Nominatim 免费服务，不需要 API key
+// 返回 Promise<string> 城市名，失败返回 null
+function reverseGeocodeCity(lat, lng) {
+  const url =
+    "https://nominatim.openstreetmap.org/reverse?format=json&lat=" +
+    lat + "&lon=" + lng + "&zoom=10&accept-language=zh-CN";
+  return fetch(url, { headers: { "Accept": "application/json" } })
+    .then((r) => r.json())
+    .then((data) => {
+      if (!data || !data.address) return null;
+      const a = data.address;
+      // Nominatim 返回的地址结构不稳定，需要尝试多个字段
+      return (
+        a.city ||
+        a.town ||
+        a.county ||
+        a.municipality ||
+        a.state_district ||
+        a.state ||
+        null
+      );
+    })
+    .catch(() => null);
+}
+
+// ---------- 想你了按钮 ----------
+function renderMissYouButton() {
+  const section = document.getElementById("miss-you-section");
+  const btn = document.getElementById("miss-you-btn");
+  if (!section || !btn) return;
+
+  const reply = SITE_DATA.missYouReply;
+  if (!reply || !reply.trim()) {
+    section.style.display = "none";
+    return;
+  }
+
+  btn.addEventListener("click", handleMissYou);
+}
+
+function handleMissYou() {
+  const btn = document.getElementById("miss-you-btn");
+  if (btn) {
+    btn.disabled = true;
+    btn.style.opacity = "0.5";
+  }
+
+  // 满屏爱心迸发：从屏幕中心向四面八方扩散
+  const cx = window.innerWidth / 2;
+  const cy = window.innerHeight / 2;
+  spawnHearts(cx, cy, 30);
+
+  // 稍微等一下，爱心迸发开始后再揭晓回复文字
+  setTimeout(() => {
+    showMissYouReply(SITE_DATA.missYouReply);
+  }, 400);
+
+  // 3秒后恢复按钮可点
+  setTimeout(() => {
+    if (btn) {
+      btn.disabled = false;
+      btn.style.opacity = "";
+    }
+  }, 3500);
+}
+
+function spawnHearts(x, y, count) {
+  if (REDUCE_MOTION) {
+    spawnConfetti(x, y, count);
+    return;
+  }
+  count = count || 30;
+  for (let i = 0; i < count; i++) {
+    const p = document.createElement("span");
+    p.className = "heart-piece";
+    const angle = (Math.PI * 2 * i) / count + Math.random() * 0.4;
+    const distance = 80 + Math.random() * 180;
+    const dx = Math.cos(angle) * distance;
+    const dy = Math.sin(angle) * distance - 50; // 稍微往上飘一点
+    const size = 14 + Math.random() * 18;
+
+    p.style.left = x + "px";
+    p.style.top = y + "px";
+    p.style.fontSize = size + "px";
+    p.style.setProperty("--dx", dx + "px");
+    p.style.setProperty("--dy", dy + "px");
+    p.style.animationDelay = (Math.random() * 0.12).toFixed(2) + "s";
+
+    document.body.appendChild(p);
+    p.addEventListener("animationend", () => p.remove());
+    setTimeout(() => p.remove(), 2400); // 保险清理
+  }
+}
+
+function showMissYouReply(text) {
+  const overlay = document.createElement("div");
+  overlay.className = "miss-you-overlay";
+  overlay.innerHTML =
+    '<div class="miss-you-reply" id="miss-you-reply-text"></div>' +
+    '<div class="miss-you-close-hint">点击任意处关闭</div>';
+  document.body.appendChild(overlay);
+
+  const replyEl = document.getElementById("miss-you-reply-text");
+  typewriterReveal(replyEl, text);
+
+  overlay.addEventListener("click", () => {
+    overlay.classList.add("miss-you-overlay-fade");
+    setTimeout(() => overlay.remove(), 500);
+  });
+
+  // 8秒后自动关闭
+  setTimeout(() => {
+    if (overlay.parentNode) {
+      overlay.classList.add("miss-you-overlay-fade");
+      setTimeout(() => {
+        if (overlay.parentNode) overlay.remove();
+      }, 500);
+    }
+  }, 8000);
 }

@@ -100,8 +100,32 @@
   <!-- 共享留言本 -->
   <section class="notebook-section">
     <div class="section-title serif">我们的留言本</div>
-    <div class="section-subtitle">想到什么都可以随时写进去，两个人都可以</div>
+    <div class="section-subtitle">— 想到什么都可以随时写进去，两个人都可以 —</div>
     <a id="notebook-btn" href="javascript:void(0)" target="_blank" rel="noopener">留言本即将上线 …</a>
+  </section>
+
+  <div class="divider"></div>
+
+  <!-- 我们的足迹 / 距离 -->
+  <!-- 完全没有配置 places 时这个板块会自动隐藏 -->
+  <section class="places-section" id="places-section">
+    <div class="section-title serif">我们的足迹</div>
+    <div class="section-subtitle">— 那些有意义的地方 —</div>
+    <div class="places-list" id="places-list"></div>
+    <button id="locate-btn" class="action-btn">查看我们之间的距离</button>
+    <div class="places-distance" id="places-distance"></div>
+    <div class="visited-cities-wrap" id="visited-cities-wrap" style="display:none">
+      <div class="visited-cities-label">这张卡片到过这些城市</div>
+      <div class="visited-cities-list" id="visited-cities-list"></div>
+    </div>
+  </section>
+
+  <div class="divider"></div>
+
+  <!-- 想你了按钮 -->
+  <!-- missYouReply 留空时按钮会自动隐藏 -->
+  <section class="miss-you-section" id="miss-you-section">
+    <button id="miss-you-btn" class="miss-you-btn">想你了</button>
   </section>
 
   <footer>made with ♥ · 2026</footer>

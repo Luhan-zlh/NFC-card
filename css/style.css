@@ -1233,6 +1233,77 @@ footer {
   margin-top: 4px;
 }
 
+/* ---------- 内嵌地图 ---------- */
+.sync-map-wrap {
+  margin-top: 16px;
+  text-align: center;
+}
+
+.sync-map-label {
+  font-size: 11px;
+  color: var(--text-dim);
+  letter-spacing: 1px;
+  margin-bottom: 8px;
+}
+
+.sync-map {
+  height: 240px;
+  border-radius: 12px;
+  overflow: hidden;
+  border: 1px solid var(--card-border);
+  z-index: 0;
+}
+
+/* Leaflet 暗色主题适配 */
+.leaflet-popup-content-wrapper {
+  background: rgba(18, 8, 38, 0.95);
+  color: var(--text-main);
+  border-radius: 8px;
+  border: 1px solid var(--card-border);
+}
+
+.leaflet-popup-tip {
+  background: rgba(18, 8, 38, 0.95);
+}
+
+.leaflet-popup-content {
+  font-size: 12px;
+  line-height: 1.5;
+  font-family: inherit;
+}
+
+.leaflet-control-zoom a {
+  background: rgba(18, 8, 38, 0.9) !important;
+  color: var(--text-main) !important;
+  border-color: var(--card-border) !important;
+}
+
+.leaflet-control-attribution {
+  background: rgba(18, 8, 38, 0.7) !important;
+  color: var(--text-dim) !important;
+  font-size: 9px !important;
+}
+
+.leaflet-control-attribution a {
+  color: var(--text-dim) !important;
+}
+
+.sync-map-distance {
+  margin-top: 10px;
+  font-size: 14px;
+  color: var(--text-main);
+}
+
+.sync-map-dist-icon {
+  color: var(--accent-pink);
+  margin-right: 4px;
+}
+
+.sync-map-distance b {
+  color: var(--accent-pink);
+  font-size: 16px;
+}
+
 /* ---------- 活动记录热力图 ---------- */
 .sync-partner-activity {
   border-top: 1px dashed rgba(255, 255, 255, 0.08);

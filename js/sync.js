@@ -369,55 +369,92 @@
     setTimeout(() => {
       if (syncMap) {
         syncMap.invalidateSize();
-        // 再次确保缩放正确
-        const b = L.latLngBounds([
-          [myLoc.lat, myLoc.lng],
-          [partnerLocation.lat, partnerLocation.lng],
-        ]);
-        syncMap.fitBounds(b, { padding: [30, 30] });
+        syncMap.fitBounds(
+          L.latLngBounds([
+            [myLoc.lat, myLoc.lng],
+            [partnerLocation.lat, partnerLocation.lng],
+          ]),
+          { padding: [40, 40] }
+        );
       }
     }, 200);
 
     // 清掉旧标记和连线
     syncMap.eachLayer((layer) => {
-      if (layer instanceof L.Marker || layer instanceof L.Polyline) {
+      if (layer instanceof L.Marker || layer instanceof L.Polyline || layer instanceof L.Icon) {
         syncMap.removeLayer(layer);
       }
     });
 
-    // 我的标记（粉色）
-    const myMarker = L.marker([myLoc.lat, myLoc.lng]).addTo(syncMap);
+    // 自定义标记图标（用 SVG divIcon，颜色区分）
+    function makeIcon(color, emoji) {
+      return L.divIcon({
+        className: "sync-map-marker",
+        html:
+          '<div class="sync-marker-pin" style="--pin-color: ' + color + ';">' +
+          '<div class="sync-marker-emoji">' + emoji + '</div>' +
+          '<div class="sync-marker-dot"></div>' +
+          '</div>',
+        iconSize: [36, 44],
+        iconAnchor: [18, 44],
+        popupAnchor: [0, -40],
+      });
+    }
+
+    // 我的标记（粉色心形）
+    const myMarker = L.marker([myLoc.lat, myLoc.lng], {
+      icon: makeIcon("#ff8fc7", "❤"),
+    }).addTo(syncMap);
     myMarker.bindPopup(
-      '<b>' + myName + '</b><br>' +
-      (myLoc.city || "未知城市") + '<br>' +
-      relativeTime(myLoc.timestamp)
+      '<div class="sync-popup">' +
+      '<div class="sync-popup-name" style="color: #ff8fc7;">' + myName + '</div>' +
+      '<div class="sync-popup-city">📍 ' + (myLoc.city || "未知城市") + '</div>' +
+      '<div class="sync-popup-time">' + relativeTime(myLoc.timestamp) + '</div>' +
+      '</div>'
     );
 
-    // 对方标记（金色）
-    const partnerMarker = L.marker([partnerLocation.lat, partnerLocation.lng]).addTo(syncMap);
+    // 对方标记（金色星形）
+    const partnerMarker = L.marker([partnerLocation.lat, partnerLocation.lng], {
+      icon: makeIcon("#ffd68a", "✦"),
+    }).addTo(syncMap);
     partnerMarker.bindPopup(
-      '<b>' + partnerName + '</b><br>' +
-      (partnerLocation.city || "未知城市") + '<br>' +
-      relativeTime(partnerLocation.timestamp)
+      '<div class="sync-popup">' +
+      '<div class="sync-popup-name" style="color: #ffd68a;">' + partnerName + '</div>' +
+      '<div class="sync-popup-city">📍 ' + (partnerLocation.city || "未知城市") + '</div>' +
+      '<div class="sync-popup-time">' + relativeTime(partnerLocation.timestamp) + '</div>' +
+      '</div>'
     );
 
-    // 连线（粉色虚线）
+    // 连线（粉色渐变虚线，更粗更醒目）
     const line = L.polyline(
       [[myLoc.lat, myLoc.lng], [partnerLocation.lat, partnerLocation.lng]],
       {
         color: "#ff8fc7",
-        weight: 2,
-        opacity: 0.6,
-        dashArray: "6 8",
+        weight: 3,
+        opacity: 0.7,
+        dashArray: "8 10",
       }
     ).addTo(syncMap);
+
+    // 在连线中点显示距离标签
+    const midLat = (myLoc.lat + partnerLocation.lat) / 2;
+    const midLng = (myLoc.lng + partnerLocation.lng) / 2;
+    const distLabel = L.marker([midLat, midLng], {
+      icon: L.divIcon({
+        className: "sync-map-dist-label",
+        html: '<div class="sync-dist-badge">❤ ' + formatDistance(dist) + '</div>',
+        iconSize: [80, 24],
+        iconAnchor: [40, 12],
+      }),
+      interactive: false,
+    }).addTo(syncMap);
 
     // 自动缩放到能看到两个标记
     const bounds = L.latLngBounds([
       [myLoc.lat, myLoc.lng],
       [partnerLocation.lat, partnerLocation.lng],
     ]);
-    syncMap.fitBounds(bounds, { padding: [30, 30] });
+    syncMap.fitBounds(bounds, { padding: [40, 40] });
 
     // 显示距离
     const distEl = document.getElementById("sync-map-distance");

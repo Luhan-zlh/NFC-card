@@ -112,6 +112,16 @@ const SITE_DATA = {
     { type: "days", value: 100, label: "在一起100天" },
     { type: "days", value: 365, label: "在一起一周年" },
     { type: "date", value: "2026-7-30 09:00", label: "第二次见面" } // 定好日期了就填在这里，格式 YYYY-MM-DD
-  ]
+  ],
+
+  // ---------- 同步功能（位置共享 / 在线状态 / 打卡 / 报备） ----------
+  // 需要先部署 Cloudflare Worker（见 backend/DEPLOY.md）
+  // 部署完后把 Worker URL 和两个密钥填进来，三个值都填了才启用同步。
+  // 不填则所有同步功能自动隐藏，不影响其他功能。
+  sync: {
+    workerUrl: "",      // Worker URL，如 https://couple-card-sync.xxx.workers.dev
+    user1Secret: "",    // 凯玟的密钥（对应 Worker 代码里 SECRETS["1"]）
+    user2Secret: ""     // 陆涵的密钥（对应 Worker 代码里 SECRETS["2"]）
+  }
 
 };

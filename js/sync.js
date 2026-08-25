@@ -83,7 +83,7 @@
       '<div class="identity-title">第一次来，你是？</div>' +
       '<div class="identity-buttons">' +
       '<button class="identity-btn" data-id="1">凯玟</button>' +
-      '<button class="identity-btn" data-id="2">陆涵</button>' +
+      '<button class="identity-btn" data-id="2">路涵</button>' +
       "</div>" +
       '<div class="identity-hint">选错没关系，清浏览器缓存可以重选</div>' +
       "</div>";
@@ -194,7 +194,7 @@
     const nameEl = document.getElementById("sync-partner-name");
     if (!dot || !text) return;
 
-    const partnerName = partnerId === "1" ? "凯玟" : "陆涵";
+    const partnerName = partnerId === "1" ? "凯玟" : "路涵";
     if (nameEl) nameEl.textContent = partnerName;
 
     if (!status || !status.lastSeen) {

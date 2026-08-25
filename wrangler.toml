@@ -1,4 +1,4 @@
-name = "couple-card-sync"
+name = "nfc-for-kaiwen"
 main = "backend/worker.js"
 compatibility_date = "2024-12-01"
 

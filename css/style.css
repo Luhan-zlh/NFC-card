@@ -1056,3 +1056,240 @@ footer {
   opacity: 0.5;
   letter-spacing: 1px;
 }
+
+/* ---------- 同步板块 ---------- */
+.sync-section {
+  max-width: 500px;
+  margin: 0 auto;
+  padding: 30px 20px;
+  text-align: center;
+}
+
+.sync-partner-card {
+  background: var(--card-bg);
+  border: 1px solid var(--card-border);
+  border-radius: 14px;
+  padding: 16px 18px;
+  margin-bottom: 16px;
+  text-align: left;
+}
+
+.sync-partner-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+
+.sync-partner-name {
+  font-size: 15px;
+  color: var(--text-main);
+  font-weight: 500;
+}
+
+.sync-online-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  flex-shrink: 0;
+  transition: background 0.3s;
+}
+
+.sync-online-dot.online {
+  background: #4ade80;
+  box-shadow: 0 0 8px 2px rgba(74, 222, 128, 0.5);
+  animation: pulse-dot 2s ease-in-out infinite;
+}
+
+.sync-online-dot.offline {
+  background: rgba(184, 173, 207, 0.3);
+}
+
+@keyframes pulse-dot {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.5; }
+}
+
+.sync-online-text {
+  font-size: 12px;
+  color: var(--text-dim);
+}
+
+.sync-partner-location {
+  font-size: 13px;
+  color: var(--text-main);
+  margin-bottom: 6px;
+}
+
+.sync-loc-icon {
+  margin-right: 2px;
+}
+
+.sync-loc-time {
+  font-size: 11px;
+  color: var(--text-dim);
+}
+
+.sync-loc-dist {
+  color: var(--accent-pink);
+  font-size: 12px;
+}
+
+.sync-partner-checkin {
+  font-size: 12px;
+  color: var(--text-dim);
+  margin-bottom: 6px;
+}
+
+.sync-checkin-icon {
+  color: var(--accent-gold);
+  margin-right: 4px;
+}
+
+.sync-partner-reports {
+  font-size: 12px;
+  border-top: 1px dashed rgba(255, 255, 255, 0.08);
+  padding-top: 8px;
+  margin-top: 6px;
+}
+
+.sync-reports-label {
+  font-size: 10px;
+  color: var(--text-dim);
+  letter-spacing: 1px;
+  margin-bottom: 4px;
+}
+
+.sync-report-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 4px 0;
+}
+
+.sync-report-type {
+  color: var(--accent-lavender);
+  font-size: 12px;
+}
+
+.sync-report-time {
+  color: var(--text-dim);
+  font-size: 11px;
+}
+
+.sync-checkin-card,
+.sync-report-card {
+  background: var(--card-bg);
+  border: 1px solid var(--card-border);
+  border-radius: 14px;
+  padding: 14px 18px;
+  margin-bottom: 12px;
+  text-align: left;
+}
+
+.sync-checkin-label,
+.sync-report-label {
+  font-size: 11px;
+  color: var(--text-dim);
+  letter-spacing: 1px;
+  margin-bottom: 10px;
+}
+
+.sync-checkin-stats {
+  font-size: 12px;
+  color: var(--text-dim);
+  margin-top: 8px;
+}
+
+.sync-report-buttons {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.sync-report-btn {
+  padding: 8px 16px;
+  border: 1px solid var(--card-border);
+  border-radius: 18px;
+  background: transparent;
+  color: var(--text-main);
+  font-size: 12px;
+  font-family: inherit;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.sync-report-btn:hover {
+  border-color: var(--accent-pink);
+  color: var(--accent-pink);
+  background: rgba(255, 143, 199, 0.08);
+}
+
+.sync-my-reports {
+  margin-top: 8px;
+}
+
+.sync-locate-wrap {
+  margin-top: 4px;
+}
+
+/* ---------- 身份选择遮罩 ---------- */
+.identity-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 10000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(5, 4, 15, 0.85);
+  backdrop-filter: blur(8px);
+  animation: missYouFadeIn 0.4s ease forwards;
+}
+
+.identity-overlay-fade {
+  animation: missYouFadeOut 0.5s ease forwards !important;
+}
+
+.identity-card {
+  text-align: center;
+  padding: 32px;
+}
+
+.identity-title {
+  font-size: 18px;
+  color: var(--text-main);
+  margin-bottom: 24px;
+  letter-spacing: 1px;
+}
+
+.identity-buttons {
+  display: flex;
+  gap: 16px;
+  justify-content: center;
+  margin-bottom: 16px;
+}
+
+.identity-btn {
+  padding: 14px 32px;
+  border: 1px solid var(--accent-pink);
+  border-radius: 26px;
+  background: transparent;
+  color: var(--accent-pink);
+  font-size: 16px;
+  font-family: inherit;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.identity-btn:hover {
+  background: rgba(255, 143, 199, 0.12);
+  box-shadow: 0 0 16px rgba(255, 143, 199, 0.3);
+  transform: translateY(-2px);
+}
+
+.identity-hint {
+  font-size: 11px;
+  color: var(--text-dim);
+  opacity: 0.5;
+  letter-spacing: 1px;
+}

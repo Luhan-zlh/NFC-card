@@ -7,7 +7,7 @@
 // 两个人的密钥 —— 从 Cloudflare Secret 环境变量读取（不硬编码在代码里）
 // 在 Cloudflare 控制台 Worker → Settings → Variables → Add variable:
 //   变量名 USER1_SECRET，值填凯玟的密钥，类型选 Secret
-//   变量名 USER2_SECRET，值填陆涵的密钥，类型选 Secret
+//   变量名 USER2_SECRET，值填路涵的密钥，类型选 Secret
 
 const CORS = {
   "Access-Control-Allow-Origin": "*",
@@ -71,6 +71,32 @@ export default {
           id: partnerId,
           location,
           status,
+          checkin,
+          reports: reports || [],
+        },
+      });
+    }
+
+    // ---------- GET /mystatus ----------
+    // 参数: userId, secret
+    // 返回: 自己的位置、打卡、报备（用于刷新后恢复显示）
+    if (request.method === "GET" && url.pathname === "/mystatus") {
+      const userId = url.searchParams.get("userId");
+      const secret = url.searchParams.get("secret");
+
+      if (!userId || !SECRETS[userId] || SECRETS[userId] !== secret) {
+        return json({ error: "unauthorized" }, 401);
+      }
+
+      const [location, checkin, reports] = await Promise.all([
+        env.KAIWEN_KV.get(`user:${userId}:location`, "json"),
+        env.KAIWEN_KV.get(`user:${userId}:checkin`, "json"),
+        env.KAIWEN_KV.get(`user:${userId}:reports`, "json"),
+      ]);
+
+      return json({
+        me: {
+          location,
           checkin,
           reports: reports || [],
         },

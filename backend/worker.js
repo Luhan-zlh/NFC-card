@@ -4,12 +4,10 @@
 // 部署步骤见同目录 DEPLOY.md
 // ============================================================
 
-// 两个人的密钥（部署后在这里改成你自己的随机字符串）
-// 每个人有自己的密钥，防止陌生人乱写
-const SECRETS = {
-  "1": "CHANGE_ME_USER1_SECRET",
-  "2": "CHANGE_ME_USER2_SECRET",
-};
+// 两个人的密钥 —— 从 Cloudflare Secret 环境变量读取（不硬编码在代码里）
+// 在 Cloudflare 控制台 Worker → Settings → Variables → Add variable:
+//   变量名 USER1_SECRET，值填凯玟的密钥，类型选 Secret
+//   变量名 USER2_SECRET，值填陆涵的密钥，类型选 Secret
 
 const CORS = {
   "Access-Control-Allow-Origin": "*",
@@ -24,8 +22,18 @@ function json(data, status = 200) {
   });
 }
 
+// 从 env 构建密钥表
+function getSecrets(env) {
+  return {
+    "1": env.USER1_SECRET,
+    "2": env.USER2_SECRET,
+  };
+}
+
 export default {
   async fetch(request, env) {
+    const SECRETS = getSecrets(env);
+
     // CORS 预检
     if (request.method === "OPTIONS") {
       return new Response(null, { headers: CORS });

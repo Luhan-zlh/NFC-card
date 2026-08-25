@@ -171,6 +171,12 @@
     // 显示自己的打卡统计
     renderMyCheckinStats();
 
+    // 显示自己的报备记录（从本地恢复，刷新不丢）
+    renderMyReports();
+
+    // 显示自己的位置分享状态（从本地恢复）
+    renderMyLocationStatus();
+
     // 每 60 秒刷新一次对方状态（低频，省电）
     setInterval(refreshPartnerStatus, 60000);
   }
@@ -233,7 +239,7 @@
       "</span>";
 
     // 如果有自己的位置，显示距离
-    const myLoc = localStorage.getItem("nfc_card_my_location");
+    const myLoc = localStorage.getItem(MY_LOCATION_KEY);
     if (myLoc) {
       try {
         const mine = JSON.parse(myLoc);
@@ -379,27 +385,58 @@
 
   // ---------- 报备 ----------
 
+  const MY_REPORTS_KEY = "nfc_card_my_reports";
+
+  function loadMyReports() {
+    try {
+      return JSON.parse(localStorage.getItem(MY_REPORTS_KEY) || "[]");
+    } catch (e) {
+      return [];
+    }
+  }
+
+  function saveMyReports(reports) {
+    try {
+      // 只保留最近 10 条到本地
+      const recent = reports.slice(-10);
+      localStorage.setItem(MY_REPORTS_KEY, JSON.stringify(recent));
+    } catch (e) {}
+  }
+
+  function renderMyReports() {
+    const el = document.getElementById("sync-my-reports");
+    if (!el) return;
+    const reports = loadMyReports();
+    if (reports.length === 0) {
+      el.style.display = "none";
+      return;
+    }
+    el.style.display = "";
+    el.innerHTML = "";
+    // 最近 3 条，倒序显示
+    reports.slice(-3).reverse().forEach((r) => {
+      const item = document.createElement("div");
+      item.className = "sync-report-item sync-report-mine";
+      item.innerHTML =
+        '<span class="sync-report-type">' + (REPORT_LABELS[r.type] || r.type) + "</span>" +
+        '<span class="sync-report-time">' + relativeTime(r.timestamp) + "</span>";
+      el.appendChild(item);
+    });
+  }
+
   function handleReport(type) {
+    const now = Date.now();
+    const reports = loadMyReports();
+    reports.push({ type: type, timestamp: now });
+    saveMyReports(reports);
+
     reportData("report", { type: type }).then(() => {
       // 刷新对方状态（让对方能尽快看到）
       setTimeout(refreshPartnerStatus, 1000);
     });
 
-    // 显示自己的报备反馈
-    const myReportsEl = document.getElementById("sync-my-reports");
-    if (myReportsEl) {
-      myReportsEl.style.display = "";
-      const item = document.createElement("div");
-      item.className = "sync-report-item sync-report-mine";
-      item.innerHTML =
-        '<span class="sync-report-type">' + (REPORT_LABELS[type] || type) + "</span>" +
-        '<span class="sync-report-time">刚刚</span>';
-      myReportsEl.appendChild(item);
-      // 只保留最近3条
-      while (myReportsEl.children.length > 3) {
-        myReportsEl.removeChild(myReportsEl.firstChild);
-      }
-    }
+    // 立即刷新自己的报备显示
+    renderMyReports();
 
     // 如果是"想你了"，触发爱心动画
     if (type === "miss" && typeof spawnHearts === "function") {
@@ -417,6 +454,26 @@
 
   // ---------- 位置分享 ----------
 
+  const MY_LOCATION_KEY = "nfc_card_my_location";
+
+  function renderMyLocationStatus() {
+    const btn = document.getElementById("sync-locate-btn");
+    if (!btn) return;
+    const saved = localStorage.getItem(MY_LOCATION_KEY);
+    if (saved) {
+      try {
+        const loc = JSON.parse(saved);
+        if (loc.city && loc.timestamp) {
+          btn.textContent = "✓ 已分享位置（" + loc.city + " · " + relativeTime(loc.timestamp) + "）";
+        } else {
+          btn.textContent = "✓ 位置已分享 · 重新分享";
+        }
+      } catch (e) {
+        btn.textContent = "分享我的位置";
+      }
+    }
+  }
+
   function handleLocate() {
     const btn = document.getElementById("sync-locate-btn");
     if (!btn) return;
@@ -433,21 +490,24 @@
       (pos) => {
         const { latitude, longitude } = pos.coords;
 
-        // 存到本地（用于算距离）
-        localStorage.setItem(
-          "nfc_card_my_location",
-          JSON.stringify({ lat: latitude, lng: longitude })
-        );
-
         // 反向地理编码 + 上报
         reverseGeocode(latitude, longitude).then((cityName) => {
+          // 存到本地（含城市名和时间，用于刷新后显示"已分享"状态）
+          const locData = {
+            lat: latitude,
+            lng: longitude,
+            city: cityName,
+            timestamp: Date.now(),
+          };
+          localStorage.setItem(MY_LOCATION_KEY, JSON.stringify(locData));
+
           reportData("location", {
             lat: latitude,
             lng: longitude,
             city: cityName,
           });
-          btn.textContent = "✓ 位置已分享";
           btn.disabled = false;
+          renderMyLocationStatus();
           // 刷新对方状态（可能对方有位置了，可以算距离）
           refreshPartnerStatus();
         });

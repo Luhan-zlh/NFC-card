@@ -1,12 +1,13 @@
 // 离线缓存 + 加速刷新：
 // 这样即使她在没有网络的地方点开桌面图标，也能看到上一次加载的内容，
 // 而且日常刷新时不用等网络返回，先用缓存秒开，同时在背后偷偷更新缓存。
-const CACHE_NAME = "nfc-card-v3";
+const CACHE_NAME = "nfc-card-v4";
 const CORE_ASSETS = [
   "./",
   "./index.html",
   "./css/style.css",
   "./js/script.js",
+  "./js/sync.js",
   "./manifest.json",
   "./icons/icon-192.png",
   "./icons/icon-512.png"

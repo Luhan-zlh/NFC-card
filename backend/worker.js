@@ -52,10 +52,10 @@ export default {
       const partnerId = userId === "1" ? "2" : "1";
 
       const [location, status, checkin, reports] = await Promise.all([
-        env.COUPLE_KV.get(`user:${partnerId}:location`, "json"),
-        env.COUPLE_KV.get(`user:${partnerId}:status`, "json"),
-        env.COUPLE_KV.get(`user:${partnerId}:checkin`, "json"),
-        env.COUPLE_KV.get(`user:${partnerId}:reports`, "json"),
+        env.KAIWEN_KV.get(`user:${partnerId}:location`, "json"),
+        env.KAIWEN_KV.get(`user:${partnerId}:status`, "json"),
+        env.KAIWEN_KV.get(`user:${partnerId}:checkin`, "json"),
+        env.KAIWEN_KV.get(`user:${partnerId}:reports`, "json"),
       ]);
 
       return json({
@@ -96,30 +96,30 @@ export default {
           city: data.city || null,
           timestamp: now,
         };
-        await env.COUPLE_KV.put(`user:${userId}:location`, JSON.stringify(locData));
+        await env.KAIWEN_KV.put(`user:${userId}:location`, JSON.stringify(locData));
         return json({ ok: true, type: "location" });
       }
 
       // 在线状态上报
       if (type === "online") {
         const statusData = { lastSeen: now };
-        await env.COUPLE_KV.put(`user:${userId}:status`, JSON.stringify(statusData));
+        await env.KAIWEN_KV.put(`user:${userId}:status`, JSON.stringify(statusData));
         return json({ ok: true, type: "online" });
       }
 
       // 打卡
       if (type === "checkin") {
-        await env.COUPLE_KV.put(`user:${userId}:checkin`, JSON.stringify(data));
+        await env.KAIWEN_KV.put(`user:${userId}:checkin`, JSON.stringify(data));
         return json({ ok: true, type: "checkin" });
       }
 
       // 报备（起床/睡觉/到达等）
       if (type === "report") {
-        let reports = (await env.COUPLE_KV.get(`user:${userId}:reports`, "json")) || [];
+        let reports = (await env.KAIWEN_KV.get(`user:${userId}:reports`, "json")) || [];
         reports.push({ ...data, timestamp: now });
         // 只保留最近 30 条
         if (reports.length > 30) reports = reports.slice(-30);
-        await env.COUPLE_KV.put(`user:${userId}:reports`, JSON.stringify(reports));
+        await env.KAIWEN_KV.put(`user:${userId}:reports`, JSON.stringify(reports));
         return json({ ok: true, type: "report", total: reports.length });
       }
 

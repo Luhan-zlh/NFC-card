@@ -312,11 +312,11 @@
   // ---------- 内嵌地图 ----------
   function renderSyncMap() {
     const wrap = document.getElementById("sync-map-wrap");
-    if (!wrap) return;
+    const mapDiv = document.getElementById("sync-map");
+    if (!wrap || !mapDiv) return;
 
     const myLocStr = localStorage.getItem(MY_LOCATION_KEY);
     if (!myLocStr || !partnerLocation || !partnerLocation.lat) {
-      // 双方不都有位置，隐藏地图
       wrap.style.display = "none";
       return;
     }
@@ -332,9 +332,13 @@
     // 双方都有位置，显示地图容器
     wrap.style.display = "";
 
-    // 如果 Leaflet 还没加载完，等一下再试
+    // 如果 Leaflet 还没加载完，等一下再试（最多重试 20 次 = 10秒）
     if (typeof L === "undefined") {
-      setTimeout(renderSyncMap, 500);
+      if (!wrap._mapRetryCount) wrap._mapRetryCount = 0;
+      if (wrap._mapRetryCount < 20) {
+        wrap._mapRetryCount++;
+        setTimeout(renderSyncMap, 500);
+      }
       return;
     }
 
@@ -345,19 +349,34 @@
 
     // 如果地图还没创建，初始化
     if (!syncMap) {
-      syncMap = L.map("sync-map", { zoomControl: true, attributionControl: true });
+      try {
+        syncMap = L.map("sync-map", { zoomControl: true, attributionControl: true });
 
-      // CartoDB 暗色 tiles，匹配网站深色风格
-      L.tileLayer("https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png", {
-        attribution: '&copy; OpenStreetMap & CartoDB',
-        maxZoom: 18,
-      }).addTo(syncMap);
+        // CartoDB 暗色 tiles，匹配网站深色风格
+        L.tileLayer("https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png", {
+          attribution: '&copy; OpenStreetMap & CartoDB',
+          maxZoom: 18,
+        }).addTo(syncMap);
+      } catch (e) {
+        console.error("Leaflet init error:", e);
+        return;
+      }
     }
 
     if (!syncMap) return;
 
     // 确保地图容器尺寸正确（从 display:none 切换过来时必须调）
-    setTimeout(() => { if (syncMap) syncMap.invalidateSize(); }, 100);
+    setTimeout(() => {
+      if (syncMap) {
+        syncMap.invalidateSize();
+        // 再次确保缩放正确
+        const b = L.latLngBounds([
+          [myLoc.lat, myLoc.lng],
+          [partnerLocation.lat, partnerLocation.lng],
+        ]);
+        syncMap.fitBounds(b, { padding: [30, 30] });
+      }
+    }, 200);
 
     // 清掉旧标记和连线
     syncMap.eachLayer((layer) => {

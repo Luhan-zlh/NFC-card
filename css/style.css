@@ -1233,6 +1233,81 @@ footer {
   margin-top: 4px;
 }
 
+/* ---------- 活动记录热力图 ---------- */
+.sync-partner-activity {
+  border-top: 1px dashed rgba(255, 255, 255, 0.08);
+  padding-top: 8px;
+  margin-top: 6px;
+}
+
+.sync-activity-label {
+  font-size: 10px;
+  color: var(--text-dim);
+  letter-spacing: 1px;
+  margin-bottom: 8px;
+}
+
+.sync-activity-grid {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 4px;
+}
+
+.sync-activity-cell {
+  text-align: center;
+  padding: 6px 2px;
+  border-radius: 6px;
+  font-size: 10px;
+  transition: transform 0.2s;
+}
+
+.sync-activity-cell:active {
+  transform: scale(0.95);
+}
+
+.activity-none {
+  background: rgba(255, 255, 255, 0.03);
+}
+.activity-low {
+  background: rgba(255, 143, 199, 0.15);
+}
+.activity-mid {
+  background: rgba(255, 143, 199, 0.3);
+}
+.activity-high {
+  background: rgba(255, 143, 199, 0.5);
+}
+
+.sync-activity-day {
+  color: var(--text-main);
+  font-size: 11px;
+  font-weight: 500;
+}
+
+.sync-activity-week {
+  color: var(--text-dim);
+  font-size: 9px;
+  margin-top: 1px;
+}
+
+.sync-activity-count {
+  color: var(--accent-pink);
+  font-size: 10px;
+  margin-top: 2px;
+}
+
+.activity-none .sync-activity-count {
+  color: var(--text-dim);
+}
+
+.sync-activity-times {
+  color: var(--text-dim);
+  font-size: 8px;
+  margin-top: 2px;
+  white-space: nowrap;
+  overflow: hidden;
+}
+
 /* ---------- 身份选择遮罩 ---------- */
 .identity-overlay {
   position: fixed;

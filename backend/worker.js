@@ -59,11 +59,12 @@ export default {
 
       const partnerId = userId === "1" ? "2" : "1";
 
-      const [location, status, checkin, reports] = await Promise.all([
+      const [location, status, checkin, reports, visits] = await Promise.all([
         env.KAIWEN_KV.get(`user:${partnerId}:location`, "json"),
         env.KAIWEN_KV.get(`user:${partnerId}:status`, "json"),
         env.KAIWEN_KV.get(`user:${partnerId}:checkin`, "json"),
         env.KAIWEN_KV.get(`user:${partnerId}:reports`, "json"),
+        env.KAIWEN_KV.get(`user:${partnerId}:visits`, "json"),
       ]);
 
       return json({
@@ -73,6 +74,7 @@ export default {
           status,
           checkin,
           reports: reports || [],
+          visits: visits || [],
         },
       });
     }
@@ -139,6 +141,16 @@ export default {
         const statusData = { lastSeen: now };
         await env.KAIWEN_KV.put(`user:${userId}:status`, JSON.stringify(statusData));
         return json({ ok: true, type: "online" });
+      }
+
+      // 访问记录（每次打开网页自动记录，用于活动记录板块）
+      if (type === "visit") {
+        let visits = (await env.KAIWEN_KV.get(`user:${userId}:visits`, "json")) || [];
+        visits.push({ timestamp: now });
+        // 只保留最近 100 条（约够看1-2个月的活动）
+        if (visits.length > 100) visits = visits.slice(-100);
+        await env.KAIWEN_KV.put(`user:${userId}:visits`, JSON.stringify(visits));
+        return json({ ok: true, type: "visit", total: visits.length });
       }
 
       // 打卡

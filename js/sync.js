@@ -126,14 +126,30 @@
       .catch(() => null);
   }
 
+  // 读取自己的状态（用于刷新后从云端恢复显示）
+  function fetchMyStatus() {
+    if (!myId || !mySecret) return Promise.resolve(null);
+    const url =
+      WORKER_URL +
+      "/mystatus?userId=" +
+      encodeURIComponent(myId) +
+      "&secret=" +
+      encodeURIComponent(mySecret);
+    return fetch(url)
+      .then((r) => r.json())
+      .catch(() => null);
+  }
+
   // 反向地理编码（复用 script.js 里的逻辑，如果有的话）
   function reverseGeocode(lat, lng) {
+    // 用英文请求，避免某些地区中文翻译出现乱码
+    // 英文城市名全球通用，且 Nominatim 对英文支持最稳定
     const url =
       "https://nominatim.openstreetmap.org/reverse?format=json&lat=" +
       lat +
       "&lon=" +
       lng +
-      "&zoom=10&accept-language=zh-CN";
+      "&zoom=10&accept-language=en";
     return fetch(url, { headers: { Accept: "application/json" } })
       .then((r) => r.json())
       .then((data) => {
@@ -171,14 +187,45 @@
     // 显示自己的打卡统计
     renderMyCheckinStats();
 
-    // 显示自己的报备记录（从本地恢复，刷新不丢）
+    // 显示自己的报备记录（先从本地恢复）
     renderMyReports();
 
-    // 显示自己的位置分享状态（从本地恢复）
+    // 显示自己的位置分享状态（先从本地恢复）
     renderMyLocationStatus();
+
+    // 从云端恢复自己的数据（本地没有但云端有的情况，比如旧版本做的操作）
+    restoreMyDataFromCloud();
 
     // 每 60 秒刷新一次对方状态（低频，省电）
     setInterval(refreshPartnerStatus, 60000);
+  }
+
+  // 从云端恢复自己的报备和位置到本地（刷新后/换设备后）
+  function restoreMyDataFromCloud() {
+    fetchMyStatus().then((result) => {
+      if (!result || !result.me) return;
+      const me = result.me;
+
+      // 恢复报备记录
+      if (me.reports && me.reports.length > 0) {
+        const localReports = loadMyReports();
+        if (localReports.length === 0) {
+          // 本地没有但云端有，从云端恢复
+          saveMyReports(me.reports);
+          renderMyReports();
+        }
+      }
+
+      // 恢复位置状态
+      if (me.location && me.location.lat) {
+        const localLoc = localStorage.getItem(MY_LOCATION_KEY);
+        if (!localLoc) {
+          // 本地没有但云端有，从云端恢复
+          localStorage.setItem(MY_LOCATION_KEY, JSON.stringify(me.location));
+          renderMyLocationStatus();
+        }
+      }
+    });
   }
 
   // ---------- 对方状态渲染 ----------

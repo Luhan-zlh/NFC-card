@@ -106,6 +106,49 @@
 
   <div class="divider"></div>
 
+  <!-- 同步状态：在线/位置/打卡/报备 -->
+  <!-- sync 配置未填写时整个板块自动隐藏 -->
+  <section class="sync-section" id="sync-section" style="display:none">
+    <div class="section-title serif">我们在一起</div>
+    <div class="section-subtitle">— 知道彼此的状态 —</div>
+
+    <!-- 对方状态卡片 -->
+    <div class="sync-partner-card" id="sync-partner-card">
+      <div class="sync-partner-header">
+        <span class="sync-partner-name" id="sync-partner-name"></span>
+        <span class="sync-online-dot" id="sync-online-dot"></span>
+        <span class="sync-online-text" id="sync-online-text">读取中…</span>
+      </div>
+      <div class="sync-partner-location" id="sync-partner-location"></div>
+      <div class="sync-partner-checkin" id="sync-partner-checkin"></div>
+      <div class="sync-partner-reports" id="sync-partner-reports"></div>
+    </div>
+
+    <!-- 我的打卡 -->
+    <div class="sync-checkin-card">
+      <div class="sync-checkin-label">今日打卡</div>
+      <button id="sync-checkin-btn" class="action-btn">打卡</button>
+      <div class="sync-checkin-stats" id="sync-checkin-stats"></div>
+    </div>
+
+    <!-- 报备 -->
+    <div class="sync-report-card">
+      <div class="sync-report-label">报备</div>
+      <div class="sync-report-buttons">
+        <button class="sync-report-btn" data-report="wakeup">起床了</button>
+        <button class="sync-report-btn" data-report="sleep">睡觉了</button>
+        <button class="sync-report-btn" data-report="miss">想你了</button>
+      </div>
+      <div class="sync-my-reports" id="sync-my-reports"></div>
+    </div>
+
+    <div class="sync-locate-wrap">
+      <button id="sync-locate-btn" class="action-btn">分享我的位置</button>
+    </div>
+  </section>
+
+  <div class="divider"></div>
+
   <!-- 我们的足迹 / 距离 -->
   <!-- 完全没有配置 places 时这个板块会自动隐藏 -->
   <section class="places-section" id="places-section">
@@ -134,6 +177,7 @@
 
 <script src="js/data.js" defer></script>
 <script src="js/script.js" defer></script>
+<script src="js/sync.js" defer></script>
 <script>
   if ('serviceWorker' in navigator) {
     window.addEventListener('load', () => {

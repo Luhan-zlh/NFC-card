@@ -2,6 +2,12 @@ name = "nfc-for-kaiwen"
 main = "backend/worker.js"
 compatibility_date = "2024-12-01"
 
-# KV 绑定会在 Cloudflare 控制台创建 KV 后手动添加
-# 到时 Worker → Settings → Bindings → Add → KV Namespace
-# Variable name 填 KAIWEN_KV（必须和代码里一致）
+# KV 绑定声明——这样 GitHub 自动部署时不会清掉手动加的绑定
+# namespace_id 需要填你 Cloudflare 控制台里 KV 的真实 ID
+# 在 Cloudflare 控制台 → Workers & Pages → KV → 找到你的 namespace → 复制 ID
+[[kv_namespaces]]
+binding = "KAIWEN_KV"
+id = "ce4014ed9c3a4d95b54dd215c4c5b86b"
+
+# Secret 变量（USER1_SECRET / USER2_SECRET）不需要写在这里
+# Secret 只能在 Cloudflare 控制台手动设置，不会进 GitHub 仓库

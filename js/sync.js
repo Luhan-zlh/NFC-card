@@ -34,6 +34,8 @@
   let mySecret = "";
   let partnerId = "";
   let syncInitialized = false;
+  let partnerLocation = null; // 缓存对方位置，供地图渲染用
+  let syncMap = null;          // Leaflet 地图实例
 
   // ---------- 工具函数 ----------
 
@@ -275,6 +277,9 @@
     const el = document.getElementById("sync-partner-location");
     if (!el) return;
 
+    // 缓存对方位置供地图使用
+    partnerLocation = location;
+
     if (!location || !location.lat) {
       el.textContent = "";
       el.style.display = "none";
@@ -298,6 +303,100 @@
         el.innerHTML +=
           ' <span class="sync-loc-dist">距你 ' + formatDistance(dist) + "</span>";
       } catch (e) {}
+    }
+
+    // 尝试渲染地图（需要双方都有位置）
+    renderSyncMap();
+  }
+
+  // ---------- 内嵌地图 ----------
+  function renderSyncMap() {
+    const wrap = document.getElementById("sync-map-wrap");
+    if (!wrap) return;
+
+    const myLocStr = localStorage.getItem(MY_LOCATION_KEY);
+    if (!myLocStr || !partnerLocation || !partnerLocation.lat) {
+      // 双方不都有位置，隐藏地图
+      wrap.style.display = "none";
+      return;
+    }
+
+    let myLoc;
+    try {
+      myLoc = JSON.parse(myLocStr);
+    } catch (e) {
+      return;
+    }
+    if (!myLoc.lat) return;
+
+    // 双方都有位置，显示地图
+    wrap.style.display = "";
+
+    const myName = myId === "1" ? "凯玟" : "路涵";
+    const partnerName = partnerId === "1" ? "凯玟" : "路涵";
+
+    const dist = haversineKm(myLoc.lat, myLoc.lng, partnerLocation.lat, partnerLocation.lng);
+
+    // 如果地图还没创建，初始化
+    if (!syncMap && typeof L !== "undefined") {
+      syncMap = L.map("sync-map", { zoomControl: true, attributionControl: true });
+
+      // CartoDB 暗色 tiles，匹配网站深色风格
+      L.tileLayer("https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png", {
+        attribution: '&copy; OpenStreetMap & CartoDB',
+        maxZoom: 18,
+      }).addTo(syncMap);
+    }
+
+    if (!syncMap) return;
+
+    // 清掉旧标记和连线
+    syncMap.eachLayer((layer) => {
+      if (layer instanceof L.Marker || layer instanceof L.Polyline) {
+        syncMap.removeLayer(layer);
+      }
+    });
+
+    // 我的标记（粉色）
+    const myMarker = L.marker([myLoc.lat, myLoc.lng]).addTo(syncMap);
+    myMarker.bindPopup(
+      '<b>' + myName + '</b><br>' +
+      (myLoc.city || "未知城市") + '<br>' +
+      relativeTime(myLoc.timestamp)
+    );
+
+    // 对方标记（金色）
+    const partnerMarker = L.marker([partnerLocation.lat, partnerLocation.lng]).addTo(syncMap);
+    partnerMarker.bindPopup(
+      '<b>' + partnerName + '</b><br>' +
+      (partnerLocation.city || "未知城市") + '<br>' +
+      relativeTime(partnerLocation.timestamp)
+    );
+
+    // 连线（粉色虚线）
+    const line = L.polyline(
+      [[myLoc.lat, myLoc.lng], [partnerLocation.lat, partnerLocation.lng]],
+      {
+        color: "#ff8fc7",
+        weight: 2,
+        opacity: 0.6,
+        dashArray: "6 8",
+      }
+    ).addTo(syncMap);
+
+    // 自动缩放到能看到两个标记
+    const bounds = L.latLngBounds([
+      [myLoc.lat, myLoc.lng],
+      [partnerLocation.lat, partnerLocation.lng],
+    ]);
+    syncMap.fitBounds(bounds, { padding: [30, 30] });
+
+    // 显示距离
+    const distEl = document.getElementById("sync-map-distance");
+    if (distEl) {
+      distEl.innerHTML =
+        '<span class="sync-map-dist-icon">❤</span> 我们相距 <b>' +
+        formatDistance(dist) + "</b>";
     }
   }
 
@@ -651,6 +750,8 @@
           renderMyLocationStatus();
           // 刷新对方状态（可能对方有位置了，可以算距离）
           refreshPartnerStatus();
+          // 尝试渲染地图（自己的位置刚更新了）
+          renderSyncMap();
         });
       },
       (err) => {

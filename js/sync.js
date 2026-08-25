@@ -329,8 +329,14 @@
     }
     if (!myLoc.lat) return;
 
-    // 双方都有位置，显示地图
+    // 双方都有位置，显示地图容器
     wrap.style.display = "";
+
+    // 如果 Leaflet 还没加载完，等一下再试
+    if (typeof L === "undefined") {
+      setTimeout(renderSyncMap, 500);
+      return;
+    }
 
     const myName = myId === "1" ? "凯玟" : "路涵";
     const partnerName = partnerId === "1" ? "凯玟" : "路涵";
@@ -338,7 +344,7 @@
     const dist = haversineKm(myLoc.lat, myLoc.lng, partnerLocation.lat, partnerLocation.lng);
 
     // 如果地图还没创建，初始化
-    if (!syncMap && typeof L !== "undefined") {
+    if (!syncMap) {
       syncMap = L.map("sync-map", { zoomControl: true, attributionControl: true });
 
       // CartoDB 暗色 tiles，匹配网站深色风格
@@ -349,6 +355,9 @@
     }
 
     if (!syncMap) return;
+
+    // 确保地图容器尺寸正确（从 display:none 切换过来时必须调）
+    setTimeout(() => { if (syncMap) syncMap.invalidateSize(); }, 100);
 
     // 清掉旧标记和连线
     syncMap.eachLayer((layer) => {

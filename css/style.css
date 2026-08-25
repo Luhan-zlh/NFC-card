@@ -1304,6 +1304,113 @@ footer {
   font-size: 16px;
 }
 
+/* ---------- 自定义地图标记 ---------- */
+.sync-map-marker {
+  background: transparent !important;
+  border: none !important;
+}
+
+.sync-marker-pin {
+  position: relative;
+  width: 36px;
+  height: 44px;
+}
+
+.sync-marker-emoji {
+  position: absolute;
+  top: 2px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 28px;
+  height: 28px;
+  border-radius: 50% 50% 50% 0;
+  background: var(--pin-color, #ff8fc7);
+  transform-origin: center;
+  transform: translateX(-50%) rotate(-45deg);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.4), 0 0 12px var(--pin-color, #ff8fc7);
+  font-size: 14px;
+  z-index: 2;
+}
+
+.sync-marker-emoji::after {
+  content: attr(data-emoji);
+}
+
+.sync-marker-pin .sync-marker-emoji {
+  font-size: 0;
+}
+
+.sync-marker-dot {
+  position: absolute;
+  top: 11px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #fff;
+  border: 2px solid var(--pin-color, #ff8fc7);
+  z-index: 3;
+}
+
+/* 标记跳动动画 */
+@keyframes markerDrop {
+  0% { transform: translateX(-50%) translateY(-30px) rotate(-45deg); opacity: 0; }
+  60% { transform: translateX(-50%) translateY(4px) rotate(-45deg); opacity: 1; }
+  100% { transform: translateX(-50%) translateY(0) rotate(-45deg); opacity: 1; }
+}
+
+.sync-marker-emoji {
+  animation: markerDrop 0.5s ease-out;
+}
+
+/* 连线中点距离标签 */
+.sync-map-dist-label {
+  background: transparent !important;
+  border: none !important;
+}
+
+.sync-dist-badge {
+  display: inline-block;
+  padding: 4px 10px;
+  background: rgba(18, 8, 38, 0.9);
+  border: 1px solid var(--accent-pink);
+  border-radius: 12px;
+  color: var(--accent-pink);
+  font-size: 11px;
+  font-weight: 500;
+  white-space: nowrap;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.5);
+  text-align: center;
+}
+
+/* 弹出窗内容美化 */
+.sync-popup {
+  text-align: center;
+  padding: 4px 8px;
+  min-width: 100px;
+}
+
+.sync-popup-name {
+  font-size: 14px;
+  font-weight: 600;
+  margin-bottom: 4px;
+}
+
+.sync-popup-city {
+  font-size: 12px;
+  color: var(--text-main);
+  margin-bottom: 2px;
+}
+
+.sync-popup-time {
+  font-size: 10px;
+  color: var(--text-dim);
+}
+
 /* ---------- 活动记录热力图 ---------- */
 .sync-partner-activity {
   border-top: 1px dashed rgba(255, 255, 255, 0.08);

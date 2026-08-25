@@ -6,6 +6,10 @@
 <title>给凯玟的卡片</title>
 <link rel="stylesheet" href="css/style.css">
 
+<!-- Leaflet 地图（内嵌显示两人位置） -->
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+  integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="">
+
 <!-- PWA：支持"添加到主屏幕" -->
 <link rel="manifest" href="manifest.json">
 <meta name="theme-color" content="#120826">
@@ -146,6 +150,13 @@
     <div class="sync-locate-wrap">
       <button id="sync-locate-btn" class="action-btn">分享我的位置</button>
     </div>
+
+    <!-- 内嵌地图：显示两人上次上传位置 + 连线距离 -->
+    <div class="sync-map-wrap" id="sync-map-wrap" style="display:none">
+      <div class="sync-map-label">我们的位置</div>
+      <div id="sync-map" class="sync-map"></div>
+      <div class="sync-map-distance" id="sync-map-distance"></div>
+    </div>
   </section>
 
   <div class="divider"></div>
@@ -178,6 +189,8 @@
 
 <script src="js/data.js" defer></script>
 <script src="js/script.js" defer></script>
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
+  integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxLV1Yp6jLQ=" crossorigin="" defer></script>
 <script src="js/sync.js" defer></script>
 <script>
   if ('serviceWorker' in navigator) {

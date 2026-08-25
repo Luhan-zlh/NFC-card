@@ -119,9 +119,9 @@ const SITE_DATA = {
   // 部署完后把 Worker URL 和两个密钥填进来，三个值都填了才启用同步。
   // 不填则所有同步功能自动隐藏，不影响其他功能。
   sync: {
-    workerUrl: "",      // Worker URL，如 https://couple-card-sync.xxx.workers.dev
-    user1Secret: "",    // 凯玟的密钥（对应 Worker 代码里 SECRETS["1"]）
-    user2Secret: ""     // 陆涵的密钥（对应 Worker 代码里 SECRETS["2"]）
+    workerUrl: "https://nfc-for-kaiwen.z-l-h-zheng23.workers.dev",
+    user1Secret: "kwkwkwkw",    // 凯玟的密钥
+    user2Secret: "lhlhlhlh"     // 路涵的密钥
   }
 
 };

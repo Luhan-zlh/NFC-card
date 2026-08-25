@@ -1,0 +1,7 @@
+name = "couple-card-sync"
+main = "backend/worker.js"
+compatibility_date = "2024-12-01"
+
+# KV 绑定会在 Cloudflare 控制台创建 KV 后手动添加
+# 到时 Worker → Settings → Bindings → Add → KV Namespace
+# Variable name 填 COUPLE_KV（必须和代码里一致）

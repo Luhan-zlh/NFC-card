@@ -181,6 +181,9 @@
     // 上报在线状态
     reportData("online", {});
 
+    // 记录本次访问（用于活动记录板块）
+    reportData("visit", {});
+
     // 读取对方状态
     refreshPartnerStatus();
 
@@ -238,6 +241,7 @@
       renderPartnerLocation(p.location);
       renderPartnerCheckin(p.checkin);
       renderPartnerReports(p.reports);
+      renderPartnerActivity(p.visits);
     });
   }
 
@@ -339,6 +343,96 @@
         relativeTime(r.timestamp) +
         "</span>";
       el.appendChild(item);
+    });
+  }
+
+  // ---------- 对方活动记录 ----------
+  // 从对方的 visits 数组生成最近7天的活动热力图
+  function renderPartnerActivity(visits) {
+    const el = document.getElementById("sync-partner-activity");
+    if (!el) return;
+
+    if (!visits || visits.length === 0) {
+      el.textContent = "";
+      el.style.display = "none";
+      return;
+    }
+    el.style.display = "";
+
+    // 生成最近7天的日期
+    const days = [];
+    const now = new Date();
+    now.setHours(0, 0, 0, 0);
+    for (let i = 6; i >= 0; i--) {
+      const d = new Date(now);
+      d.setDate(d.getDate() - i);
+      days.push({
+        date: d,
+        dateStr: d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, "0") + "-" + String(d.getDate()).padStart(2, "0"),
+        count: 0,
+        visits: [],
+      });
+    }
+
+    // 把 visits 归类到对应日期
+    visits.forEach((v) => {
+      const d = new Date(v.timestamp);
+      const ds = d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, "0") + "-" + String(d.getDate()).padStart(2, "0");
+      const day = days.find((day) => day.dateStr === ds);
+      if (day) {
+        day.count++;
+        day.visits.push(v.timestamp);
+      }
+    });
+
+    // 找最大访问次数用于颜色深浅
+    const maxCount = Math.max(...days.map((d) => d.count), 1);
+
+    // 星期标签
+    const weekDays = ["日", "一", "二", "三", "四", "五", "六"];
+
+    el.innerHTML = '<div class="sync-activity-label">最近7天活动</div>';
+    el.innerHTML += '<div class="sync-activity-grid"></div>';
+    const grid = el.querySelector(".sync-activity-grid");
+
+    days.forEach((day) => {
+      const cell = document.createElement("div");
+      cell.className = "sync-activity-cell";
+      const intensity = day.count / maxCount;
+      if (day.count === 0) {
+        cell.classList.add("activity-none");
+      } else if (intensity < 0.34) {
+        cell.classList.add("activity-low");
+      } else if (intensity < 0.67) {
+        cell.classList.add("activity-mid");
+      } else {
+        cell.classList.add("activity-high");
+      }
+
+      // 日期 + 星期
+      const dayLabel = String(day.date.getDate()) + "日";
+      const weekLabel = weekDays[day.date.getDay()];
+
+      cell.innerHTML =
+        '<div class="sync-activity-day">' + dayLabel + "</div>" +
+        '<div class="sync-activity-week">周' + weekLabel + "</div>" +
+        '<div class="sync-activity-count">' +
+        (day.count > 0 ? day.count + "次" : "—") +
+        "</div>";
+
+      // 如果有访问，显示最早和最晚一次的时间
+      if (day.visits.length > 0) {
+        const times = day.visits.sort((a, b) => a - b);
+        const first = new Date(times[0]);
+        const last = new Date(times[times.length - 1]);
+        const fmt = (d) => String(d.getHours()).padStart(2, "0") + ":" + String(d.getMinutes()).padStart(2, "0");
+        cell.innerHTML +=
+          '<div class="sync-activity-times">' +
+          fmt(first) + " ~ " + fmt(last) +
+          "</div>";
+      }
+
+      grid.appendChild(cell);
     });
   }
 
@@ -567,7 +661,7 @@
         }
         btn.disabled = false;
       },
-      { enableHighAccuracy: false, timeout: 10000, maximumAge: 600000 }
+      { enableHighAccuracy: true, timeout: 15000, maximumAge: 0 }
     );
   }
 

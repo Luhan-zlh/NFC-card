@@ -129,7 +129,11 @@ function bindConfettiTriggers() {
 
 // ---------- 里程碑 / 重要日子 ----------
 
-// 算出某个里程碑距离今天还有几天（0=就是今天，负数=已经过了，null=算不出来/没配置）
+// 算出某个里程碑距离今天还有几天
+// 返回 { daysLeft, actualValue, actualLabel } 或 null
+// daysLeft: 0=今天, 负数=已过, 正数=还有几天
+// actualValue: 对于可重复的，是当前实际目标值（比如200天、2027年生日）
+// actualLabel: 动态标签（比如"在一起200天"会自动替换数字）
 function daysUntilMilestone(m) {
   const today = new Date();
   today.setHours(0, 0, 0, 0);
@@ -138,19 +142,36 @@ function daysUntilMilestone(m) {
     if (!m.value) return null;
     const start = parseAnniversaryDateTime(SITE_DATA.anniversaryDate);
     if (!start) return null;
-    const target = new Date(start.getTime() + m.value * 24 * 60 * 60 * 1000);
-    target.setHours(0, 0, 0, 0); // 里程碑倒计时按"天"算，忽略具体时分秒
-    return Math.round((target - today) / (24 * 60 * 60 * 1000));
+
+    let targetValue = m.value;
+    let target = new Date(start.getTime() + targetValue * 24 * 60 * 60 * 1000);
+    target.setHours(0, 0, 0, 0);
+
+    // 可重复的天数里程碑：达成后自动跳到下一个（value += step）
+    if (m.repeat) {
+      const step = m.step || m.value;
+      while (target <= today) {
+        targetValue += step;
+        target = new Date(start.getTime() + targetValue * 24 * 60 * 60 * 1000);
+        target.setHours(0, 0, 0, 0);
+      }
+    }
+
+    const daysLeft = Math.round((target - today) / (24 * 60 * 60 * 1000));
+
+    // 动态标签：把 label 里的数字替换成实际目标值
+    // 比如 "在一起100天" → "在一起200天"
+    let actualLabel = m.label || "";
+    if (m.repeat && actualLabel) {
+      actualLabel = actualLabel.replace(/\d+/, targetValue);
+    }
+
+    return { daysLeft, actualValue: targetValue, actualLabel };
   }
 
   if (m.type === "date") {
-    if (!m.value || !m.value.trim()) return null; // 还没定日期，跳过
-    // 里程碑倒计时是按"天"算的（显示"还有几天"，不是"还有几小时"），
-    // 所以如果写了具体时间（比如 "2026-7-29 15:00"），时间部分会被有意忽略，
-    // 只取日期部分——这是设计如此，不是 bug
+    if (!m.value || !m.value.trim()) return null;
     const datePart = m.value.trim().split(/[ T]/)[0];
-    // 宽容解析：就算手写日期忘了补零（比如 "2026-7-30"），也能正确识别，
-    // 不需要严格写成 "2026-07-30"
     const parts = datePart.split("-");
     let target;
     if (parts.length === 3) {
@@ -161,16 +182,27 @@ function daysUntilMilestone(m) {
     } else {
       target = new Date(datePart + "T00:00:00");
     }
-    if (isNaN(target.getTime())) return null; // 实在解析不了，安全跳过不报错
+    if (isNaN(target.getTime())) return null;
     target.setHours(0, 0, 0, 0);
-    return Math.round((target - today) / (24 * 60 * 60 * 1000));
+
+    // 每年重复：过了就自动+1年
+    if (m.repeat === "yearly") {
+      while (target <= today) {
+        target.setFullYear(target.getFullYear() + 1);
+      }
+    }
+
+    const daysLeft = Math.round((target - today) / (24 * 60 * 60 * 1000));
+    return { daysLeft, actualValue: target.getFullYear(), actualLabel: m.label || "" };
   }
 
   return null;
 }
 
-function milestoneKey(m) {
-  return `${m.type}_${m.value}_${m.label}`;
+function milestoneKey(m, resolved) {
+  // 可重复的里程碑用实际目标值做 key，这样每个周期都能单独庆祝
+  const val = resolved ? resolved.actualValue : m.value;
+  return `${m.type}_${val}_${m.label}`;
 }
 
 // 显示"即将到来的里程碑"（最多同时显示3个，太多了会显乱）+ "已经达成的记录"；
@@ -192,15 +224,19 @@ function renderMilestones() {
   }
 
   const withDays = SITE_DATA.milestones
-    .map((m) => ({ ...m, daysLeft: daysUntilMilestone(m) }))
-    .filter((m) => m.daysLeft !== null);
+    .map((m) => {
+      const resolved = daysUntilMilestone(m);
+      if (!resolved) return null;
+      return { ...m, daysLeft: resolved.daysLeft, actualLabel: resolved.actualLabel, resolved };
+    })
+    .filter((m) => m !== null);
 
   const upcoming = withDays
     .filter((m) => m.daysLeft >= 0)
     .sort((a, b) => a.daysLeft - b.daysLeft);
   const achieved = withDays
     .filter((m) => m.daysLeft < 0)
-    .sort((a, b) => b.daysLeft - a.daysLeft); // 越晚达成的排越前面
+    .sort((a, b) => b.daysLeft - a.daysLeft);
 
   if (upcoming.length === 0 && achieved.length === 0) {
     section.style.display = "none";
@@ -213,11 +249,12 @@ function renderMilestones() {
   upcoming.slice(0, 3).forEach((m) => {
     const chip = document.createElement("div");
     chip.className = "milestone-chip";
+    const label = m.actualLabel || m.label;
     if (m.daysLeft === 0) {
-      chip.innerHTML = `<span class="milestone-today">今天就是「${m.label}」🎉</span>`;
+      chip.innerHTML = `<span class="milestone-today">今天就是「${label}」🎉</span>`;
     } else {
       chip.innerHTML =
-        `<span class="milestone-dot"></span>距离「${m.label}」还有 ` +
+        `<span class="milestone-dot"></span>距离「${label}」还有 ` +
         `<span class="milestone-num">${m.daysLeft}</span> 天`;
     }
     upcomingEl.appendChild(chip);
@@ -232,7 +269,9 @@ function renderMilestones() {
     achieved.forEach((m) => {
       const badge = document.createElement("span");
       badge.className = "milestone-badge";
-      badge.textContent = `✓ ${m.label}`;
+      // 可重复的只显示原始 label（不显示动态数字，因为已经过了）
+      const label = m.repeat ? m.label : (m.actualLabel || m.label);
+      badge.textContent = `✓ ${label}`;
       achievedEl.appendChild(badge);
     });
   }
@@ -251,11 +290,15 @@ function checkMilestone() {
     celebrated = [];
   }
 
-  const pending = SITE_DATA.milestones.filter((m) => {
-    const key = milestoneKey(m);
-    if (celebrated.includes(key)) return false;
-    const daysLeft = daysUntilMilestone(m);
-    return daysLeft !== null && daysLeft <= 0; // 已到达或已经过了
+  const pending = [];
+  SITE_DATA.milestones.forEach((m) => {
+    const resolved = daysUntilMilestone(m);
+    if (!resolved) return;
+    const key = milestoneKey(m, resolved);
+    if (celebrated.includes(key)) return;
+    if (resolved.daysLeft <= 0) {
+      pending.push({ ...m, actualLabel: resolved.actualLabel, resolved });
+    }
   });
 
   if (pending.length === 0) return;
@@ -289,7 +332,7 @@ function checkMilestone() {
     showMilestoneCelebration(pending);
   }, 1200);
 
-  pending.forEach((m) => celebrated.push(milestoneKey(m)));
+  pending.forEach((m) => celebrated.push(milestoneKey(m, m.resolved)));
   try {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(celebrated));
   } catch (e) {}
@@ -303,7 +346,7 @@ function showMilestoneCelebration(milestones) {
   let html = '<div class="milestone-celebration-content">';
   html += '<div class="milestone-celebration-icon">🎉</div>';
   milestones.forEach((m) => {
-    html += '<div class="milestone-celebration-text">' + (m.label || "") + "</div>";
+    html += '<div class="milestone-celebration-text">' + (m.actualLabel || m.label || "") + "</div>";
   });
   html += '<div class="milestone-celebration-subtitle">我们做到了 ❤</div>';
   html += '<div class="milestone-celebration-hint">点击任意处关闭</div>';

@@ -46,14 +46,104 @@ export default {
       return json({ ok: true, service: "couple-card-sync" });
     }
 
-    // ---------- GET /status ----------
-    // 参数: userId, secret
-    // 返回: 对方的位置、在线状态、打卡、报备
-    if (request.method === "GET" && url.pathname === "/status") {
+    // ---------- POST /auth ----------
+    // 密码门验证：用户输入密码，Worker 用 Secret 比对
+    // 成功返回临时 token（24小时有效）+ userId
+    // 带 IP 限流：同一 IP 最多 5 次失败/10 分钟
+    if (request.method === "POST" && url.pathname === "/auth") {
+      let body;
+      try {
+        body = await request.json();
+      } catch (e) {
+        return json({ error: "invalid json" }, 400);
+      }
+
+      const { passcode } = body;
+      if (!passcode) {
+        return json({ error: "missing passcode" }, 400);
+      }
+
+      // IP 限流检查
+      const clientIP = request.headers.get("CF-Connecting-IP") || "unknown";
+      const rateLimitKey = `ratelimit:${clientIP}`;
+      let attempts = 0;
+      try {
+        attempts = parseInt(await env.KAIWEN_KV.get(rateLimitKey, "text") || "0", 10);
+      } catch (e) {}
+
+      if (attempts >= 5) {
+        return json({ error: "too many attempts, try again later" }, 429);
+      }
+
+      // 比对密码（用 Secret 值，不硬编码）
+      let matchedUserId = null;
+      if (SECRETS["1"] && SECRETS["1"] === passcode) {
+        matchedUserId = "1";
+      } else if (SECRETS["2"] && SECRETS["2"] === passcode) {
+        matchedUserId = "2";
+      }
+
+      if (!matchedUserId) {
+        // 记录失败次数，10分钟过期
+        attempts++;
+        await env.KAIWEN_KV.put(rateLimitKey, String(attempts), { expirationTtl: 600 });
+        return json({ error: "wrong passcode" }, 401);
+      }
+
+      // 验证成功：生成临时 token
+      // token = userId + "_" + 时间戳hash，简单但够用
+      const token = matchedUserId + "_" + Date.now() + "_" + Math.random().toString(36).slice(2);
+      const tokenKey = `token:${token}`;
+      // token 存 24 小时
+      await env.KAIWEN_KV.put(tokenKey, matchedUserId, { expirationTtl: 86400 });
+
+      // 清除该 IP 的失败记录
+      if (attempts > 0) {
+        await env.KAIWEN_KV.delete(rateLimitKey);
+      }
+
+      return json({ ok: true, userId: matchedUserId, token: token });
+    }
+
+    // ---------- 验证 token 的辅助函数 ----------
+    // 返回 userId 或 null
+    async function verifyToken(token) {
+      if (!token) return null;
+      try {
+        const userId = await env.KAIWEN_KV.get(`token:${token}`, "text");
+        return userId || null;
+      } catch (e) {
+        return null;
+      }
+    }
+
+    // ---------- 从请求中获取已验证的 userId ----------
+    // 优先用 token，也兼容旧的 secret 方式（过渡期）
+    async function getAuthUserId(request, url) {
+      // 方式1：token（密码门验证后发的）
+      const authHeader = request.headers.get("X-Auth-Token");
+      if (authHeader) {
+        return await verifyToken(authHeader);
+      }
+      const tokenParam = url.searchParams.get("token");
+      if (tokenParam) {
+        return await verifyToken(tokenParam);
+      }
+      // 方式2：旧的 secret 方式（向后兼容）
       const userId = url.searchParams.get("userId");
       const secret = url.searchParams.get("secret");
+      if (userId && SECRETS[userId] && SECRETS[userId] === secret) {
+        return userId;
+      }
+      return null;
+    }
 
-      if (!userId || !SECRETS[userId] || SECRETS[userId] !== secret) {
+    // ---------- GET /status ----------
+    // 认证：token（header 或 query）或旧的 secret 方式
+    // 返回: 对方的位置、在线状态、打卡、报备
+    if (request.method === "GET" && url.pathname === "/status") {
+      const userId = await getAuthUserId(request, url);
+      if (!userId) {
         return json({ error: "unauthorized" }, 401);
       }
 
@@ -80,13 +170,11 @@ export default {
     }
 
     // ---------- GET /mystatus ----------
-    // 参数: userId, secret
+    // 认证：token 或 secret
     // 返回: 自己的位置、打卡、报备（用于刷新后恢复显示）
     if (request.method === "GET" && url.pathname === "/mystatus") {
-      const userId = url.searchParams.get("userId");
-      const secret = url.searchParams.get("secret");
-
-      if (!userId || !SECRETS[userId] || SECRETS[userId] !== secret) {
+      const userId = await getAuthUserId(request, url);
+      if (!userId) {
         return json({ error: "unauthorized" }, 401);
       }
 
@@ -106,8 +194,8 @@ export default {
     }
 
     // ---------- POST /report ----------
-    // body: { userId, secret, type, data }
-    // type: "location" | "online" | "checkin" | "report"
+    // body: { type, data } + token 认证
+    // type: "location" | "online" | "checkin" | "report" | "visit"
     if (request.method === "POST" && url.pathname === "/report") {
       let body;
       try {
@@ -116,12 +204,20 @@ export default {
         return json({ error: "invalid json" }, 400);
       }
 
-      const { userId, secret, type, data } = body;
+      // 认证：优先 token header，兼容旧 secret body
+      const authHeader = request.headers.get("X-Auth-Token");
+      let userId = null;
+      if (authHeader) {
+        userId = await verifyToken(authHeader);
+      } else if (body.userId && body.secret && SECRETS[body.userId] && SECRETS[body.userId] === body.secret) {
+        userId = body.userId;
+      }
 
-      if (!userId || !SECRETS[userId] || SECRETS[userId] !== secret) {
+      if (!userId) {
         return json({ error: "unauthorized" }, 401);
       }
 
+      const { type, data } = body;
       const now = Date.now();
 
       // 位置上报

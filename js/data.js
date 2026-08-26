@@ -117,10 +117,13 @@ const SITE_DATA = {
   // - 到达当天（或之后第一次打开网页）会有彩带庆祝，庆祝过一次就不会再重复弹
   // - 想加多少条都行，随便加/删，不需要排序，代码会自动按时间远近排列
   milestones: [
-    { type: "days", value: 100, label: "在一起100天" },
-    { type: "days", value: 365, label: "在一起一周年" },
-    { type: "date", value: "2026-5-2", label: "凯玟生日" },
-    { type: "date", value: "2026-7-23", label: "路涵生日" },
+    // repeat: true → 达成后自动跳到下一个（step 默认=value）
+    { type: "days", value: 100, label: "在一起100天", repeat: true },
+    { type: "days", value: 365, label: "在一起一周年", repeat: true, step: 365 },
+    // repeat: "yearly" → 每年自动递推到下一年
+    { type: "date", value: "2026-5-2", label: "凯玟生日", repeat: "yearly" },
+    { type: "date", value: "2026-7-23", label: "路涵生日", repeat: "yearly" },
+    // 不重复的固定日期
     { type: "date", value: "2026-7-30 09:00", label: "第二次见面" }
   ],
 

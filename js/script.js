@@ -18,6 +18,11 @@ document.addEventListener("DOMContentLoaded", () => {
   renderMilestones();
   checkMilestone();
   pingVisitCounter();
+  initLightbox();
+
+  // 双时区时钟（信封仪式后显示）
+  renderInfoBar();
+  setInterval(renderInfoBar, 1000);
 
   // 计数器每秒刷新一次，制造"实时在增长"的感觉
   setInterval(renderCounter, 1000);
@@ -256,21 +261,69 @@ function checkMilestone() {
   if (pending.length === 0) return;
 
   setTimeout(() => {
+    // 全屏爱心迸发
+    if (typeof spawnHearts === "function") {
+      spawnHearts(window.innerWidth / 2, window.innerHeight / 2, 40);
+    }
+    // 多波彩带
     const counterEl = document.getElementById("counter-value");
     if (counterEl) {
       const rect = counterEl.getBoundingClientRect();
-      spawnConfetti(
-        rect.left + rect.width / 2,
-        rect.top + rect.height / 2,
-        36
-      );
+      spawnConfetti(rect.left + rect.width / 2, rect.top + rect.height / 2, 36);
+      // 第二波，延迟0.5秒
+      setTimeout(() => {
+        spawnConfetti(window.innerWidth / 2, window.innerHeight / 3, 50);
+      }, 500);
+      // 第三波
+      setTimeout(() => {
+        spawnConfetti(window.innerWidth * 0.3, window.innerHeight / 2, 30);
+        spawnConfetti(window.innerWidth * 0.7, window.innerHeight / 2, 30);
+      }, 1000);
     }
-  }, 1200); // 等开场遮罩淡出、内容可见后再触发
+    // 星空闪烁（复用开信封的星空提亮）
+    if (typeof window.triggerStarfieldFlash === "function") {
+      window.triggerStarfieldFlash();
+      setTimeout(() => window.triggerStarfieldFlash(), 800);
+    }
+    // 显示里程碑庆祝文字
+    showMilestoneCelebration(pending);
+  }, 1200);
 
   pending.forEach((m) => celebrated.push(milestoneKey(m)));
   try {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(celebrated));
   } catch (e) {}
+}
+
+function showMilestoneCelebration(milestones) {
+  if (!milestones || milestones.length === 0) return;
+  const overlay = document.createElement("div");
+  overlay.className = "milestone-celebration-overlay";
+
+  let html = '<div class="milestone-celebration-content">';
+  html += '<div class="milestone-celebration-icon">🎉</div>';
+  milestones.forEach((m) => {
+    html += '<div class="milestone-celebration-text">' + (m.label || "") + "</div>";
+  });
+  html += '<div class="milestone-celebration-subtitle">我们做到了 ❤</div>';
+  html += '<div class="milestone-celebration-hint">点击任意处关闭</div>';
+  html += "</div>";
+  overlay.innerHTML = html;
+
+  document.body.appendChild(overlay);
+
+  overlay.addEventListener("click", () => {
+    overlay.classList.add("milestone-celebration-fade");
+    setTimeout(() => overlay.remove(), 600);
+  });
+
+  // 10秒后自动关闭
+  setTimeout(() => {
+    if (overlay.parentNode) {
+      overlay.classList.add("milestone-celebration-fade");
+      setTimeout(() => { if (overlay.parentNode) overlay.remove(); }, 600);
+    }
+  }, 10000);
 }
 
 // ---------- 滚动渐入 ----------
@@ -693,7 +746,7 @@ function renderTimeline() {
       const img = document.createElement("img");
       img.src = imgs[0];
       img.alt = item.title || "";
-      img.className = "timeline-img";
+      img.className = "timeline-img timeline-img-clickable";
       img.loading = "lazy";
       img.onerror = function () {
         const placeholder = document.createElement("div");
@@ -701,6 +754,9 @@ function renderTimeline() {
         placeholder.textContent = "♥";
         this.replaceWith(placeholder);
       };
+      img.addEventListener("click", () => {
+        if (typeof openLightbox === "function") openLightbox(imgs, 0);
+      });
       card.appendChild(img);
     } else {
       // 多张照片 → 轮播图
@@ -710,13 +766,14 @@ function renderTimeline() {
       const track = document.createElement("div");
       track.className = "carousel-track";
 
-      imgs.forEach((src) => {
+      imgs.forEach((src, imgIdx) => {
         const cell = document.createElement("div");
         cell.className = "carousel-cell";
         const img = document.createElement("img");
         img.src = src;
         img.alt = item.title || "";
         img.loading = "lazy";
+        img.className = "timeline-img-clickable";
         img.onerror = function () {
           const ph = document.createElement("div");
           ph.className = "timeline-img-placeholder";
@@ -724,6 +781,10 @@ function renderTimeline() {
           ph.style.height = "200px";
           this.replaceWith(ph);
         };
+        img.addEventListener("click", (e) => {
+          e.stopPropagation();
+          if (typeof openLightbox === "function") openLightbox(imgs, imgIdx);
+        });
         cell.appendChild(img);
         track.appendChild(cell);
       });
@@ -1223,3 +1284,137 @@ function showMissYouReply(text) {
     }
   }, 8000);
 }
+
+// ---------- 双时区信息栏 ----------
+function renderInfoBar() {
+  const bar = document.getElementById("info-bar");
+  if (!bar) return;
+
+  // 信封仪式完成后才显示
+  if (!document.body.classList.contains("content-revealed")) return;
+  bar.style.display = "";
+
+  const tzs = SITE_DATA.timezones || {};
+  const myTz = tzs.user2 || "Europe/London";   // 默认路涵
+  const partnerTz = tzs.user1 || "Asia/Shanghai"; // 默认凯玟
+
+  const now = new Date();
+  const fmtOpts = { hour: "2-digit", minute: "2-digit", hour12: false };
+
+  try {
+    const myTime = now.toLocaleString("zh-CN", { ...fmtOpts, timeZone: myTz });
+    const partnerTime = now.toLocaleString("zh-CN", { ...fmtOpts, timeZone: partnerTz });
+
+    const myEl = document.getElementById("info-time-my");
+    const partnerEl = document.getElementById("info-time-partner");
+    if (myEl) myEl.textContent = myTime;
+    if (partnerEl) partnerEl.textContent = partnerTime;
+
+    // 判断对方是白天还是晚上
+    const partnerHour = parseInt(now.toLocaleString("en-US", { hour: "numeric", hour12: false, timeZone: partnerTz }), 10);
+    const partnerLabel = document.getElementById("info-clock-partner");
+    if (partnerLabel) {
+      const period = partnerHour >= 6 && partnerHour < 18 ? "白天" : "夜晚";
+      partnerLabel.querySelector(".info-label").textContent = "她·" + period;
+    }
+  } catch (e) {}
+}
+
+// 更新信息栏里的距离（供 sync.js 调用）
+function updateInfoBarDistance(distKm) {
+  const el = document.getElementById("info-dist-value");
+  if (!el) return;
+  if (distKm !== null && distKm !== undefined) {
+    el.textContent = formatDistance(distKm);
+  }
+}
+
+// 更新信息栏里的天气（供 sync.js 调用）
+function updateInfoBarWeather(text) {
+  const row = document.getElementById("info-weather-row");
+  const textEl = document.getElementById("info-weather-text");
+  if (!row || !textEl) return;
+  if (text) {
+    textEl.textContent = text;
+    row.style.display = "";
+  } else {
+    row.style.display = "none";
+  }
+}
+
+// ---------- 照片灯箱 ----------
+let lightboxImages = [];
+let lightboxIndex = 0;
+
+function initLightbox() {
+  const lb = document.getElementById("lightbox");
+  const closeBtn = document.getElementById("lightbox-close");
+  const prevBtn = document.getElementById("lightbox-prev");
+  const nextBtn = document.getElementById("lightbox-next");
+  const backdrop = lb ? lb.querySelector(".lightbox-backdrop") : null;
+  if (!lb) return;
+
+  function close() {
+    lb.style.display = "none";
+    document.body.style.overflow = "";
+  }
+  function show(idx) {
+    lightboxIndex = (idx + lightboxImages.length) % lightboxImages.length;
+    const img = document.getElementById("lightbox-img");
+    if (img) img.src = lightboxImages[lightboxIndex];
+    // 多张才显示导航箭头
+    const showNav = lightboxImages.length > 1;
+    if (prevBtn) prevBtn.style.display = showNav ? "" : "none";
+    if (nextBtn) nextBtn.style.display = showNav ? "" : "none";
+  }
+
+  if (closeBtn) closeBtn.addEventListener("click", close);
+  if (backdrop) backdrop.addEventListener("click", close);
+  if (prevBtn) prevBtn.addEventListener("click", (e) => { e.stopPropagation(); show(lightboxIndex - 1); });
+  if (nextBtn) nextBtn.addEventListener("click", (e) => { e.stopPropagation(); show(lightboxIndex + 1); });
+
+  // ESC 关闭
+  document.addEventListener("keydown", (e) => {
+    if (lb.style.display === "none") return;
+    if (e.key === "Escape") close();
+    if (e.key === "ArrowLeft" && lightboxImages.length > 1) show(lightboxIndex - 1);
+    if (e.key === "ArrowRight" && lightboxImages.length > 1) show(lightboxIndex + 1);
+  });
+
+  // 触摸滑动
+  let touchStartX = null;
+  lb.addEventListener("pointerdown", (e) => {
+    if (e.target === closeBtn || e.target === prevBtn || e.target === nextBtn) return;
+    touchStartX = e.clientX;
+  });
+  lb.addEventListener("pointerup", (e) => {
+    if (touchStartX === null) return;
+    const dx = e.clientX - touchStartX;
+    if (Math.abs(dx) > 50 && lightboxImages.length > 1) {
+      show(lightboxIndex + (dx < 0 ? 1 : -1));
+    }
+    touchStartX = null;
+  });
+}
+
+// 打开灯箱（供 renderTimeline 调用）
+function openLightbox(images, startIndex) {
+  const lb = document.getElementById("lightbox");
+  if (!lb) return;
+  lightboxImages = images;
+  lightboxIndex = startIndex || 0;
+  lb.style.display = "";
+  document.body.style.overflow = "hidden";
+  const img = document.getElementById("lightbox-img");
+  if (img) img.src = lightboxImages[lightboxIndex];
+  const showNav = lightboxImages.length > 1;
+  const prevBtn = document.getElementById("lightbox-prev");
+  const nextBtn = document.getElementById("lightbox-next");
+  if (prevBtn) prevBtn.style.display = showNav ? "" : "none";
+  if (nextBtn) nextBtn.style.display = showNav ? "" : "none";
+}
+
+// 暴露给外部调用
+window.openLightbox = openLightbox;
+window.updateInfoBarDistance = updateInfoBarDistance;
+window.updateInfoBarWeather = updateInfoBarWeather;

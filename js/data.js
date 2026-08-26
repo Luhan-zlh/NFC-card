@@ -124,12 +124,11 @@ const SITE_DATA = {
 
   // ---------- 同步功能（位置共享 / 在线状态 / 打卡 / 报备） ----------
   // 需要先部署 Cloudflare Worker（见 backend/DEPLOY.md）
-  // 部署完后把 Worker URL 和两个密钥填进来，三个值都填了才启用同步。
-  // 不填则所有同步功能自动隐藏，不影响其他功能。
+  // 密钥不写在这里（仓库是公开的），改用密码门验证：
+  //   用户输入密码 → Worker 用 Secret 比对 → 发回临时 token
+  //   之后用 token 访问，不用反复输密码
   sync: {
-    workerUrl: "https://nfc-for-kaiwen.z-l-h-zheng23.workers.dev",
-    user1Secret: "kwkwkwkw",    // 凯玟的密钥
-    user2Secret: "lhlhlhlh"     // 路涵的密钥
+    workerUrl: "https://nfc-for-kaiwen.z-l-h-zheng23.workers.dev"
   }
 
 };

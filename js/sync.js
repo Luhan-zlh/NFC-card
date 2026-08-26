@@ -294,7 +294,7 @@
       relativeTime(location.timestamp) +
       "</span>";
 
-    // 如果有自己的位置，显示距离
+    // 如果有自己的位置，显示距离 + 更新顶部信息栏距离
     const myLoc = localStorage.getItem(MY_LOCATION_KEY);
     if (myLoc) {
       try {
@@ -302,11 +302,68 @@
         const dist = haversineKm(mine.lat, mine.lng, location.lat, location.lng);
         el.innerHTML +=
           ' <span class="sync-loc-dist">距你 ' + formatDistance(dist) + "</span>";
+        // 更新顶部信息栏
+        if (typeof window.updateInfoBarDistance === "function") {
+          window.updateInfoBarDistance(dist);
+        }
       } catch (e) {}
     }
 
+    // 获取对方城市天气
+    fetchPartnerWeather(location);
+
     // 尝试渲染地图（需要双方都有位置）
     renderSyncMap();
+  }
+
+  // ---------- 对方城市天气 ----------
+  // 用 Open-Meteo 免费 API（不需要 API key）
+  // 只在拿到对方位置时请求一次，不轮询，省电
+  let weatherFetchedFor = null; // 记录已请求过天气的坐标，避免重复请求
+
+  function fetchPartnerWeather(location) {
+    if (!location || !location.lat) return;
+    // 同一个位置只请求一次天气（避免每次刷新对方状态都请求）
+    const locKey = location.lat.toFixed(2) + "," + location.lng.toFixed(2);
+    if (weatherFetchedFor === locKey) return;
+    weatherFetchedFor = locKey;
+
+    const url =
+      "https://api.open-meteo.com/v1/forecast?latitude=" +
+      location.lat + "&longitude=" + location.lng +
+      "&current_weather=true&timezone=auto";
+
+    fetch(url)
+      .then((r) => r.json())
+      .then((data) => {
+        if (!data || !data.current_weather) return;
+        const cw = data.current_weather;
+        const temp = Math.round(cw.temperature);
+        const code = cw.weathercode;
+
+        // WMO 天气码转中文描述
+        const weatherDesc = wmoToChinese(code);
+
+        const city = location.city || "她那边";
+        const text = city + " " + temp + "°C " + weatherDesc;
+
+        if (typeof window.updateInfoBarWeather === "function") {
+          window.updateInfoBarWeather(text);
+        }
+      })
+      .catch(() => {});
+  }
+
+  // WMO 天气码 → 中文
+  function wmoToChinese(code) {
+    if (code === 0) return "晴 ☀";
+    if (code <= 3) return "多云 ⛅";
+    if (code <= 48) return "有雾 🌫";
+    if (code <= 67) return "小雨 🌧";
+    if (code <= 77) return "雪 ❄";
+    if (code <= 82) return "阵雨 🌦";
+    if (code <= 99) return "雷雨 ⛈";
+    return "—";
   }
 
   // ---------- 内嵌地图 ----------

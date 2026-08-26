@@ -1310,63 +1310,6 @@ footer {
   border: none !important;
 }
 
-.sync-marker-pin {
-  position: relative;
-  width: 36px;
-  height: 44px;
-}
-
-.sync-marker-emoji {
-  position: absolute;
-  top: 2px;
-  left: 50%;
-  transform: translateX(-50%);
-  width: 28px;
-  height: 28px;
-  border-radius: 50% 50% 50% 0;
-  background: var(--pin-color, #ff8fc7);
-  transform-origin: center;
-  transform: translateX(-50%) rotate(-45deg);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.4), 0 0 12px var(--pin-color, #ff8fc7);
-  font-size: 14px;
-  z-index: 2;
-}
-
-.sync-marker-emoji::after {
-  content: attr(data-emoji);
-}
-
-.sync-marker-pin .sync-marker-emoji {
-  font-size: 0;
-}
-
-.sync-marker-dot {
-  position: absolute;
-  top: 11px;
-  left: 50%;
-  transform: translateX(-50%);
-  width: 8px;
-  height: 8px;
-  border-radius: 50%;
-  background: #fff;
-  border: 2px solid var(--pin-color, #ff8fc7);
-  z-index: 3;
-}
-
-/* 标记跳动动画 */
-@keyframes markerDrop {
-  0% { transform: translateX(-50%) translateY(-30px) rotate(-45deg); opacity: 0; }
-  60% { transform: translateX(-50%) translateY(4px) rotate(-45deg); opacity: 1; }
-  100% { transform: translateX(-50%) translateY(0) rotate(-45deg); opacity: 1; }
-}
-
-.sync-marker-emoji {
-  animation: markerDrop 0.5s ease-out;
-}
-
 /* 连线中点距离标签 */
 .sync-map-dist-label {
   background: transparent !important;

@@ -10,17 +10,26 @@
   const SYNC_ENABLED =
     SITE_DATA.sync &&
     SITE_DATA.sync.workerUrl &&
-    SITE_DATA.sync.workerUrl.trim() &&
-    SITE_DATA.sync.user1Secret &&
-    SITE_DATA.sync.user2Secret;
+    SITE_DATA.sync.workerUrl.trim();
 
   if (!SYNC_ENABLED) {
     return; // 没配置 Worker，整个同步功能静默退出
   }
 
   const WORKER_URL = SITE_DATA.sync.workerUrl.replace(/\/$/, "");
-  const IDENT_KEY = "nfc_card_identity";
+  const TOKEN_KEY = "nfc_card_auth_token";
+  const USERID_KEY = "nfc_card_auth_userid";
   const CHECKIN_KEY = "nfc_card_my_checkin";
+
+  // 认证 token（从 localStorage 读取，密码门验证后存入）
+  let authToken = localStorage.getItem(TOKEN_KEY);
+  let myId = localStorage.getItem(USERID_KEY);
+  let mySecret = ""; // 不再使用 secret，保留变量兼容
+  let partnerId = "";
+  let syncInitialized = false;
+  let partnerLocation = null;
+  let syncMap = null;
+  let passgateVerified = false;
 
   const REPORT_LABELS = {
     wakeup: "起床了",
@@ -29,13 +38,6 @@
     arrive: "到达",
     custom: "报备",
   };
-
-  let myId = localStorage.getItem(IDENT_KEY); // "1" or "2"
-  let mySecret = "";
-  let partnerId = "";
-  let syncInitialized = false;
-  let partnerLocation = null; // 缓存对方位置，供地图渲染用
-  let syncMap = null;          // Leaflet 地图实例
 
   // ---------- 工具函数 ----------
 
@@ -71,58 +73,106 @@
     return d.getTime() === y.getTime();
   }
 
-  // ---------- 身份选择 ----------
+  // ---------- 密码门 ----------
 
-  function needsIdentity() {
-    return !myId;
-  }
-
-  function showIdentityPicker() {
+  function showPassGate() {
     const overlay = document.createElement("div");
     overlay.className = "identity-overlay";
     overlay.innerHTML =
       '<div class="identity-card">' +
-      '<div class="identity-title">第一次来，你是？</div>' +
-      '<div class="identity-buttons">' +
-      '<button class="identity-btn" data-id="1">凯玟</button>' +
-      '<button class="identity-btn" data-id="2">路涵</button>' +
-      "</div>" +
-      '<div class="identity-hint">选错没关系，清浏览器缓存可以重选</div>' +
+      '<div class="identity-title">欢迎回来</div>' +
+      '<div class="identity-subtitle">输入暗号才能进入哦</div>' +
+      '<input type="password" class="passgate-input" id="passgate-input" ' +
+      'placeholder="暗号" autocomplete="off" autocapitalize="off" spellcheck="false">' +
+      '<button class="passgate-btn" id="passgate-btn">进入</button>' +
+      '<div class="passgate-error" id="passgate-error"></div>' +
+      '<div class="identity-hint">输错没关系，再试就好</div>' +
       "</div>";
     document.body.appendChild(overlay);
 
-    overlay.querySelectorAll(".identity-btn").forEach((btn) => {
-      btn.addEventListener("click", () => {
-        myId = btn.getAttribute("data-id");
-        localStorage.setItem(IDENT_KEY, myId);
-        overlay.classList.add("identity-overlay-fade");
-        setTimeout(() => overlay.remove(), 500);
-        initSyncData();
+    const input = document.getElementById("passgate-input");
+    const btn = document.getElementById("passgate-btn");
+    const errEl = document.getElementById("passgate-error");
+
+    setTimeout(() => { if (input) input.focus(); }, 300);
+
+    function tryAuth() {
+      const passcode = input.value.trim();
+      if (!passcode) return;
+      btn.textContent = "验证中…";
+      btn.disabled = true;
+      errEl.textContent = "";
+
+      authenticate(passcode).then((ok) => {
+        if (ok) {
+          passgateVerified = true;
+          overlay.classList.add("identity-overlay-fade");
+          setTimeout(() => overlay.remove(), 500);
+          initSyncData();
+        } else {
+          btn.textContent = "进入";
+          btn.disabled = false;
+          errEl.textContent = "暗号不对，再试试";
+          input.value = "";
+          input.focus();
+          // 抖动动画
+          input.classList.add("passgate-shake");
+          setTimeout(() => input.classList.remove("passgate-shake"), 400);
+        }
       });
+    }
+
+    btn.addEventListener("click", tryAuth);
+    input.addEventListener("keydown", (e) => {
+      if (e.key === "Enter") tryAuth();
     });
   }
 
   // ---------- 后端通信 ----------
 
-  function reportData(type, data) {
-    if (!myId || !mySecret) return Promise.resolve();
-    return fetch(WORKER_URL + "/report", {
+  // ---------- 密码门验证 ----------
+  function authenticate(passcode) {
+    return fetch(WORKER_URL + "/auth", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ userId: myId, secret: mySecret, type, data }),
+      body: JSON.stringify({ passcode: passcode }),
+    })
+      .then((r) => r.json())
+      .then((data) => {
+        if (data && data.ok && data.token) {
+          authToken = data.token;
+          myId = data.userId;
+          localStorage.setItem(TOKEN_KEY, authToken);
+          localStorage.setItem(USERID_KEY, myId);
+          return true;
+        }
+        return false;
+      })
+      .catch(() => false);
+  }
+
+  // 检查是否已验证（有有效 token）
+  function isAuthenticated() {
+    return !!(authToken && myId);
+  }
+
+  function reportData(type, data) {
+    if (!authToken) return Promise.resolve();
+    return fetch(WORKER_URL + "/report", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "X-Auth-Token": authToken,
+      },
+      body: JSON.stringify({ type, data }),
     })
       .then((r) => r.json())
       .catch(() => null);
   }
 
   function fetchPartnerStatus() {
-    if (!myId || !mySecret) return Promise.resolve(null);
-    const url =
-      WORKER_URL +
-      "/status?userId=" +
-      encodeURIComponent(myId) +
-      "&secret=" +
-      encodeURIComponent(mySecret);
+    if (!authToken) return Promise.resolve(null);
+    const url = WORKER_URL + "/status?token=" + encodeURIComponent(authToken);
     return fetch(url)
       .then((r) => r.json())
       .catch(() => null);
@@ -130,22 +180,42 @@
 
   // 读取自己的状态（用于刷新后从云端恢复显示）
   function fetchMyStatus() {
-    if (!myId || !mySecret) return Promise.resolve(null);
-    const url =
-      WORKER_URL +
-      "/mystatus?userId=" +
-      encodeURIComponent(myId) +
-      "&secret=" +
-      encodeURIComponent(mySecret);
+    if (!authToken) return Promise.resolve(null);
+    const url = WORKER_URL + "/mystatus?token=" + encodeURIComponent(authToken);
     return fetch(url)
       .then((r) => r.json())
       .catch(() => null);
   }
 
-  // 反向地理编码（复用 script.js 里的逻辑，如果有的话）
+  // 反向地理编码：返回详细地址（街道级）
   function reverseGeocode(lat, lng) {
-    // 用英文请求，避免某些地区中文翻译出现乱码
-    // 英文城市名全球通用，且 Nominatim 对英文支持最稳定
+    const url =
+      "https://nominatim.openstreetmap.org/reverse?format=json&lat=" +
+      lat +
+      "&lon=" +
+      lng +
+      "&zoom=16&accept-language=zh-CN";
+    return fetch(url, { headers: { Accept: "application/json" } })
+      .then((r) => r.json())
+      .then((data) => {
+        if (!data || !data.address) return null;
+        const a = data.address;
+        // 拼接详细地址：区 + 街道/路 + 门牌
+        const parts = [];
+        if (a.suburb || a.neighbourhood) parts.push(a.suburb || a.neighbourhood);
+        if (a.road || a.pedestrian) parts.push(a.road || a.pedestrian);
+        if (a.house_number) parts.push(a.house_number + "号");
+        // 城市级（用于粗略显示）
+        const city = a.city || a.town || a.county || a.municipality || a.state_district || a.state || null;
+        // 如果拼出了详细地址，返回详细地址；否则返回城市名
+        const detail = parts.length > 0 ? parts.join("·") : null;
+        return detail || city;
+      })
+      .catch(() => null);
+  }
+
+  // 反向地理编码：只返回城市名（用于天气等不需要精确的场景）
+  function reverseGeocodeCity(lat, lng) {
     const url =
       "https://nominatim.openstreetmap.org/reverse?format=json&lat=" +
       lat +
@@ -166,13 +236,13 @@
 
   function initSyncData() {
     if (syncInitialized) return;
+    if (!isAuthenticated()) return;
     syncInitialized = true;
 
     const section = document.getElementById("sync-section");
     if (section) section.style.display = "";
 
-    // 设置密钥
-    mySecret = myId === "1" ? SITE_DATA.sync.user1Secret : SITE_DATA.sync.user2Secret;
+    // 设置对方 ID
     partnerId = myId === "1" ? "2" : "1";
 
     // 绑定按钮
@@ -925,11 +995,12 @@
   }
 
   function onRevealed() {
-    if (needsIdentity()) {
-      showIdentityPicker();
-      // 身份选择完成后（在 showIdentityPicker 的回调里）会调 initSyncData
-    } else {
+    if (isAuthenticated()) {
+      // 已有有效 token，直接初始化
       initSyncData();
+    } else {
+      // 没有 token，弹密码门
+      showPassGate();
     }
   }
 

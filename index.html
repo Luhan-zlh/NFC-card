@@ -60,6 +60,27 @@
     <div class="greeting" id="greeting-text">这是只属于你的卡片</div>
   </section>
 
+  <!-- 顶部信息栏：双时区时钟 + 距离 + 天气（信封仪式后显示） -->
+  <section class="info-bar" id="info-bar" style="display:none">
+    <div class="info-bar-row">
+      <div class="info-item info-clock" id="info-clock-my">
+        <span class="info-label">我</span>
+        <span class="info-time" id="info-time-my"></span>
+      </div>
+      <div class="info-item info-distance" id="info-distance-wrap">
+        <span class="info-dist-icon">❤</span>
+        <span class="info-dist-value" id="info-dist-value">—</span>
+      </div>
+      <div class="info-item info-clock" id="info-clock-partner">
+        <span class="info-label">她</span>
+        <span class="info-time" id="info-time-partner"></span>
+      </div>
+    </div>
+    <div class="info-bar-row info-weather-row" id="info-weather-row" style="display:none">
+      <span id="info-weather-text"></span>
+    </div>
+  </section>
+
   <div class="divider"></div>
 
   <!-- 在一起天数计数器 -->
@@ -186,6 +207,15 @@
   <footer>made with ♥ · 2026</footer>
 
 </main>
+
+<!-- 照片灯箱（点击全屏查看） -->
+<div id="lightbox" class="lightbox" style="display:none">
+  <div class="lightbox-backdrop"></div>
+  <img id="lightbox-img" class="lightbox-img" src="" alt="">
+  <button class="lightbox-close" id="lightbox-close">✕</button>
+  <button class="lightbox-nav lightbox-prev" id="lightbox-prev">‹</button>
+  <button class="lightbox-nav lightbox-next" id="lightbox-next">›</button>
+</div>
 
 <script src="js/data.js" defer></script>
 <script src="js/script.js" defer></script>

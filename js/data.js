@@ -14,6 +14,14 @@ const SITE_DATA = {
   // 开场语（第一屏的小字）
   greeting: "我爱你",
 
+  // ---------- 时区配置（双时区时钟用） ----------
+  // 填标准的 IANA 时区名，参考 https://en.wikipedia.org/wiki/List_of_tz_database_time_zones
+  // user1 = 凯玟，user2 = 路涵
+  timezones: {
+    user1: "Asia/Shanghai",    // 凯玟在北京
+    user2: "Europe/London"     // 路涵在英国
+  },
+
   // ---------- 时间线 / 回忆录 ----------
   // 想加几条都行，代码是自适应条数的——数组里有几条，网页就自动渲染几条，
   // 不需要改任何其他代码，也没有上限。

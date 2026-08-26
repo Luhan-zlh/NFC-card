@@ -386,24 +386,32 @@
       }
     });
 
-    // 自定义标记图标（用 SVG divIcon，颜色区分）
-    function makeIcon(color, emoji) {
+    // 自定义标记图标（SVG 水滴 pin，颜色区分）
+    function makeIcon(color, label) {
+      var svg =
+        '<svg width="32" height="42" viewBox="0 0 32 42" xmlns="http://www.w3.org/2000/svg">' +
+        '<path d="M16 0C7.2 0 0 7.2 0 16c0 12 16 26 16 26s16-14 16-26C32 7.2 24.8 0 16 0z" ' +
+        'fill="' + color + '" ' +
+        'stroke="rgba(255,255,255,0.3)" stroke-width="1" ' +
+        'filter="drop-shadow(0 2px 4px rgba(0,0,0,0.5))"/>' +
+        '<circle cx="16" cy="16" r="6" fill="rgba(18,8,38,0.9)"/>' +
+        '<text x="16" y="20" text-anchor="middle" font-size="9" fill="' + color + '" ' +
+        'font-family="sans-serif" font-weight="bold">' + label + '</text>' +
+        '</svg>';
       return L.divIcon({
         className: "sync-map-marker",
-        html:
-          '<div class="sync-marker-pin" style="--pin-color: ' + color + ';">' +
-          '<div class="sync-marker-emoji">' + emoji + '</div>' +
-          '<div class="sync-marker-dot"></div>' +
-          '</div>',
-        iconSize: [36, 44],
-        iconAnchor: [18, 44],
-        popupAnchor: [0, -40],
+        html: svg,
+        iconSize: [32, 42],
+        iconAnchor: [16, 42],
+        popupAnchor: [0, -38],
       });
     }
 
-    // 我的标记（粉色心形）
+    // 我的标记（粉色 K = 凯玟 / L = 路涵）
+    var myLabel = myId === "1" ? "K" : "L";
+    var partnerLabel = partnerId === "1" ? "K" : "L";
     const myMarker = L.marker([myLoc.lat, myLoc.lng], {
-      icon: makeIcon("#ff8fc7", "❤"),
+      icon: makeIcon("#ff8fc7", myLabel),
     }).addTo(syncMap);
     myMarker.bindPopup(
       '<div class="sync-popup">' +
@@ -413,9 +421,9 @@
       '</div>'
     );
 
-    // 对方标记（金色星形）
+    // 对方标记（金色）
     const partnerMarker = L.marker([partnerLocation.lat, partnerLocation.lng], {
-      icon: makeIcon("#ffd68a", "✦"),
+      icon: makeIcon("#ffd68a", partnerLabel),
     }).addTo(syncMap);
     partnerMarker.bindPopup(
       '<div class="sync-popup">' +

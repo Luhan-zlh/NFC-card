@@ -119,7 +119,9 @@ const SITE_DATA = {
   milestones: [
     { type: "days", value: 100, label: "在一起100天" },
     { type: "days", value: 365, label: "在一起一周年" },
-    { type: "date", value: "2026-7-30 09:00", label: "第二次见面" } // 定好日期了就填在这里，格式 YYYY-MM-DD
+    { type: "date", value: "2026-5-2", label: "凯玟生日" },
+    { type: "date", value: "2026-7-23", label: "路涵生日" },
+    { type: "date", value: "2026-7-30 09:00", label: "第二次见面" }
   ],
 
   // ---------- 同步功能（位置共享 / 在线状态 / 打卡 / 报备） ----------

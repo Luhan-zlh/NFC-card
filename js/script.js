@@ -159,11 +159,17 @@ function daysUntilMilestone(m) {
 
     const daysLeft = Math.round((target - today) / (24 * 60 * 60 * 1000));
 
-    // 动态标签：把 label 里的数字替换成实际目标值
-    // 比如 "在一起100天" → "在一起200天"
+    // 动态标签：把 {n} 占位符替换成实际值
+    // "在一起{n}天" → "在一起400天"
+    // "在一起{n}周年" → "在一起2周年"
     let actualLabel = m.label || "";
     if (m.repeat && actualLabel) {
-      actualLabel = actualLabel.replace(/\d+/, targetValue);
+      if (m.unit === "anniversary") {
+        // 周年类：365天=1周年，730天=2周年...
+        actualLabel = actualLabel.replace("{n}", Math.round(targetValue / 365));
+      } else {
+        actualLabel = actualLabel.replace("{n}", targetValue);
+      }
     }
 
     return { daysLeft, actualValue: targetValue, actualLabel };

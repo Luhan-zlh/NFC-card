@@ -244,9 +244,9 @@ function renderMilestones() {
   }
   section.style.display = "";
 
-  // ---- 即将到来（最多显示3个） ----
+  // ---- 即将到来（最多显示5个） ----
   upcomingEl.innerHTML = "";
-  upcoming.slice(0, 3).forEach((m) => {
+  upcoming.slice(0, 5).forEach((m) => {
     const chip = document.createElement("div");
     chip.className = "milestone-chip";
     const label = m.actualLabel || m.label;

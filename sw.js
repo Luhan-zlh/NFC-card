@@ -1,7 +1,7 @@
 // 离线缓存 + 加速刷新：
 // 这样即使她在没有网络的地方点开桌面图标，也能看到上一次加载的内容，
 // 而且日常刷新时不用等网络返回，先用缓存秒开，同时在背后偷偷更新缓存。
-const CACHE_NAME = "nfc-card-v8";
+const CACHE_NAME = "nfc-card-v9";
 const CORE_ASSETS = [
   "./",
   "./index.html",
@@ -13,14 +13,14 @@ const CORE_ASSETS = [
   "./icons/icon-512.png"
 ];
 
-// data.js 和 images/ 里的内容会被经常更新（时间线、照片、小纸条），
-// 这类文件"内容新鲜度"比"秒开速度"更重要，所以单独区分出来，
-// 走"优先联网获取最新"策略，而不是"缓存优先"，
-// 避免出现"改完内容刷新一次还是看到旧版本"的情况。
+// 经常更新的文件走"网络优先"策略，改完刷新一次就能看到最新版
 function isFrequentlyUpdatedAsset(url) {
   return (
     url.pathname.endsWith("/js/data.js") ||
     url.pathname.endsWith("/js/sync.js") ||
+    url.pathname.endsWith("/js/script.js") ||
+    url.pathname.endsWith("/css/style.css") ||
+    url.pathname.endsWith("/index.html") ||
     url.pathname.includes("/images/")
   );
 }
